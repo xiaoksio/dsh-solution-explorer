@@ -1,5 +1,6 @@
 import * as fsp from 'node:fs/promises'
 import * as pathModule from 'node:path'
+import { spawn } from 'node:child_process'
 
 import { json, ensureInside, autoRename, movePath } from '../http-util.ts'
 import { buildFileTree, searchFiles, IMAGE_EXT, imageMime } from '../tree.ts'
@@ -95,6 +96,61 @@ export const fsGet: Record<string, Handler> = {
     }
   },
 }
+
+/**
+ * Windows helper script for opening a folder in Explorer AND promoting the new
+ * window to the foreground. A background host (no window of its own) has no
+ * right to SetForegroundWindow, so a plain `explorer.exe <dir>` child may land
+ * minimized/behind other windows depending on the foreground-lock race. This
+ * script polls for the new Shell window, then attaches its thread input to the
+ * current foreground thread (an ALT key pulse unlocks the foreground lock)
+ * before calling SetForegroundWindow — measured 3/3 reliable on Win10/11.
+ * Runs via `powershell -EncodedCommand` so the target path travels through an
+ * environment variable: no quoting/escaping surface at all.
+ */
+const OPEN_FOLDER_FRONT_SCRIPT = [
+  "$ErrorActionPreference = 'SilentlyContinue'",
+  'Add-Type -TypeDefinition @"',
+  'using System;using System.Runtime.InteropServices;',
+  'public static class SeFront {',
+  '[DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();',
+  '[DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hWnd);',
+  '[DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);',
+  '[DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);',
+  '[DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, IntPtr ProcessId);',
+  '[DllImport("user32.dll")] public static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);',
+  '[DllImport("user32.dll")] public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);',
+  '}',
+  '"@',
+  'Start-Process explorer.exe $env:SE_OPEN_TARGET',
+  '$s = New-Object -ComObject Shell.Application',
+  '$known = @($s.Windows() | ForEach-Object { $_.HWND })',
+  '$deadline = (Get-Date).AddSeconds(5)',
+  '$w = $null',
+  'while ((Get-Date) -lt $deadline -and -not $w) {',
+  '    Start-Sleep -Milliseconds 150',
+  '    $w = @($s.Windows() | Where-Object { $_.FullName -like \'*explorer.exe\' -and $known -notcontains $_.HWND }) | Select-Object -Last 1',
+  '}',
+  'if ($w) {',
+  '    Start-Sleep -Milliseconds 250',
+  '    $h = $w.HWND',
+  '    $fg = [SeFront]::GetForegroundWindow()',
+  '    if ($fg -ne $h) {',
+  '        if ([SeFront]::IsIconic($h)) { [void][SeFront]::ShowWindow($h, 9); Start-Sleep -Milliseconds 120 }',
+  '        [SeFront]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero)',
+  '        [SeFront]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)',
+  '        $ft = [SeFront]::GetWindowThreadProcessId($fg, [IntPtr]::Zero)',
+  '        $mt = [SeFront]::GetWindowThreadProcessId($h, [IntPtr]::Zero)',
+  '        [void][SeFront]::AttachThreadInput($mt, $ft, $true)',
+  '        [void][SeFront]::SetForegroundWindow($h)',
+  '        [void][SeFront]::AttachThreadInput($mt, $ft, $false)',
+  '    }',
+  '}',
+].join('\n')
+
+// Actions accepted by /solution-explorer/open-native; module-level so the
+// set is not rebuilt on every request.
+const OPEN_NATIVE_ACTIONS = new Set(['reveal', 'open', 'openas', 'properties'])
 
 export const fsPost: Record<string, Handler> = {
   '/solution-explorer/settings': async ({ res, payload, getConfig, setConfig, persist }) => {
@@ -252,6 +308,74 @@ export const fsPost: Record<string, Handler> = {
     } catch (err: any) {
       const msg = err?.code === 'EEXIST' ? '已存在同名文件或文件夹' : (err instanceof Error ? err.message : String(err))
       json(res, { ok: false, error: { message: msg } })
+    }
+  },
+  '/solution-explorer/open-native': async ({ res, payload, root }) => {
+    // Open a workspace path with its owning system program: reveal a folder in
+    // the file manager, open a file with its default association, let the user
+    // pick an association ("open with"), or show the properties dialog.
+    const target = typeof payload.path === 'string' ? payload.path : ''
+    const action = typeof payload.action === 'string' ? payload.action : ''
+    if (!root || !target) { json(res, { ok: false, error: { message: 'root and path required' } }); return }
+    if (!OPEN_NATIVE_ACTIONS.has(action)) { json(res, { ok: false, error: { message: 'unknown action' } }); return }
+    // "Open with..." and "Properties" are Windows shell features; the other
+    // actions degrade gracefully per platform below.
+    if ((action === 'openas' || action === 'properties') && process.platform !== 'win32') {
+      json(res, { ok: false, error: { message: `${action} is only supported on Windows` } }); return
+    }
+    try {
+      if (!ensureInside(root, target)) { json(res, { ok: false, error: { message: 'path traversal denied' } }); return }
+      const fullPath = pathModule.resolve(root, target)
+      // Reject missing targets early so no system dialog pops for a stale path.
+      const targetStat = await fsp.stat(fullPath)
+      // Always spawn with an argv array (no shell) so a workspace path can
+      // never be interpreted as command text. Failures must stay non-fatal:
+      // an unhandled child 'error' event would crash the whole host.
+      const launchBackground = (cmd: string, args: string[], extraEnv?: Record<string, string>) => {
+        const child = spawn(cmd, args, {
+          // NOTE: no `detached` here — with a detached child, recent Node/Win
+          // combos make `powershell -EncodedCommand` exit silently without
+          // running the script. windowsHide keeps console children invisible.
+          stdio: 'ignore',
+          windowsHide: true,
+          ...(extraEnv ? { env: { ...process.env, ...extraEnv } } : {}),
+        })
+        child.on('error', (err) => console.warn('[sol-exp] open-native spawn failed:', err.message))
+        child.unref()
+      }
+      if (action === 'reveal' || (action === 'open' && targetStat.isDirectory())) {
+        // Open the folder itself (its contents), never the parent-with-selection
+        // behavior — that reads as "wrong folder opened" in the UI.
+        // The UI only sends reveal for directories; for a direct API call with
+        // a file, the reveal branch degrades to a plain open on every platform
+        // (win32 default association / darwin Finder selection / linux open).
+        if (process.platform === 'win32') {
+          launchBackground('powershell.exe', ['-NoProfile', '-STA', '-EncodedCommand', Buffer.from(OPEN_FOLDER_FRONT_SCRIPT, 'utf16le').toString('base64')], { SE_OPEN_TARGET: fullPath })
+        } else if (process.platform === 'darwin') {
+          // Finder "Reveal": opens the enclosing window and selects the folder.
+          launchBackground('open', ['-R', fullPath])
+        } else {
+          // No standard reveal API on Linux; opening the folder itself is the
+          // closest, predictable equivalent (never its parent directory).
+          launchBackground('xdg-open', [fullPath])
+        }
+      } else if (action === 'open') {
+        // Files open via the platform default association.
+        if (process.platform === 'win32') launchBackground('explorer.exe', [fullPath])
+        else launchBackground(process.platform === 'darwin' ? 'open' : 'xdg-open', [fullPath])
+      } else if (action === 'openas') {
+        // Windows 10/11 "How do you want to open this file?" picker.
+        launchBackground(pathModule.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'OpenWith.exe'), [fullPath])
+      } else {
+        // Standard properties dialog via Shell COM InvokeVerb('properties').
+        const propertiesScript = "$s=New-Object -ComObject Shell.Application;"
+          + "$i=Get-Item -LiteralPath $env:SE_OPEN_TARGET;"
+          + "$s.Namespace($i.DirectoryName).ParseName($i.Name).InvokeVerb('properties')"
+        launchBackground('powershell.exe', ['-NoProfile', '-STA', '-EncodedCommand', Buffer.from(propertiesScript, 'utf16le').toString('base64')], { SE_OPEN_TARGET: fullPath })
+      }
+      json(res, { ok: true, value: true })
+    } catch (err) {
+      json(res, { ok: false, error: { message: err instanceof Error ? err.message : String(err) } })
     }
   },
 }
