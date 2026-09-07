@@ -43,6 +43,10 @@ const zh = {
   'error.read': '读取文件失败',
   'context.copyPath': '复制路径',
   'context.reveal': '在文件管理器中显示',
+  'context.open': '打开',
+  'context.openWith': '打开方式',
+  'context.properties': '属性',
+  'context.openFailed': '打开失败',
 
   // Terminal
   'terminal.new': '新建终端',
@@ -206,6 +210,10 @@ const en: Record<SolutionExplorerKey, string> = {
   'error.read': 'Failed to read file',
   'context.copyPath': 'Copy path',
   'context.reveal': 'Reveal in file explorer',
+  'context.open': 'Open',
+  'context.openWith': 'Open with...',
+  'context.properties': 'Properties',
+  'context.openFailed': 'Failed to open',
 
   // Terminal
   'terminal.new': 'New terminal',

@@ -69,7 +69,7 @@ export function buildSearchContent(search: SearchState, tree: TreeState, root: s
 
                    data-sol-exp-path="${escapeHtml(r.path)}"
 
-                   oncontextmenu="event.preventDefault();event.stopPropagation();window.__solExpContextMenu(this.dataset.solExpPath||'', event.pageX, event.pageY)">
+                   oncontextmenu="event.preventDefault();event.stopPropagation();window.__solExpContextMenu(this.dataset.solExpPath||'', event.pageX, event.pageY, ${r.type === "directory"})">
 
                 <span class="sol-exp-icon">${r.type === "directory" ? folderIcon(false) : fileIcon(r.name)}</span>
 

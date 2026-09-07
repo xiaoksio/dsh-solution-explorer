@@ -23,6 +23,24 @@ export interface ContextMenuDeps {
 export function registerContextMenuBridges(deps: ContextMenuDeps): () => void {
   const { state, render } = deps
 
+  // Bridge to the host open-native route: open a workspace path with its
+  // owning system program (reveal folder / default app / open-with picker /
+  // properties dialog). Unsupported platform+action combos answer with a toast.
+  const openNative = async (path: string, action: 'reveal' | 'open' | 'openas' | 'properties') => {
+    if (!state.root || !path) return;
+    try {
+      const result = await (await fetch("/solution-explorer/open-native", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ root: state.root, path, action }),
+      })).json();
+      if (!result.ok) showToast(result.error?.message || t("context.openFailed"), true);
+    } catch (err) {
+      showToast(String((err && err.message) || err), true);
+    }
+  };
+  window.__solExpOpenNative = openNative;
+
   const hideContextMenu = () => {
     if (state.contextMenuEl) {
       state.contextMenuEl.remove();
@@ -99,9 +117,19 @@ export function registerContextMenuBridges(deps: ContextMenuDeps): () => void {
 
     addItem("新建文件", false, () => window.__solExpNew("file", base));
     addItem("新建文件夹", false, () => window.__solExpNew("dir", base));
+    // Intentional: reveal acts on the right-clicked folder only (single-object
+    // semantic), even when a multi-selection containing it is active.
+    if (isDir && target) addItem(t("context.reveal"), false, () => window.__solExpOpenNative(target, "reveal"));
 
     if (targets.length) {
-      if (targets.length === 1) addItem("重命名", false, () => window.__solExpRename(targets[0]));
+      if (targets.length === 1) {
+        addItem("重命名", false, () => window.__solExpRename(targets[0]));
+        if (!isDir) {
+          addItem(t("context.open"), false, () => window.__solExpOpenNative(targets[0], "open"));
+          addItem(t("context.openWith"), false, () => window.__solExpOpenNative(targets[0], "openas"));
+          addItem(t("context.properties"), false, () => window.__solExpOpenNative(targets[0], "properties"));
+        }
+      }
       addItem("复制", false, () => {
         window.__solExpCopy();
       });
@@ -216,6 +244,7 @@ export function registerContextMenuBridges(deps: ContextMenuDeps): () => void {
   return () => {
     document.removeEventListener("click", hideContextMenu);
     delete window.__solExpNew;
+    delete window.__solExpOpenNative;
     delete window.__solExpPanelContextMenu;
     delete window.__solExpContextMenu;
     delete window.__solExpRename;

@@ -157,6 +157,8 @@ declare global {
 
     __solExpNew?: (type: 'file' | 'dir', dir: string) => Promise<void>
 
+    __solExpOpenNative?: (path: string, action: 'reveal' | 'open' | 'openas' | 'properties') => Promise<void>
+
     __solExpDragStart?: (path: string) => void
 
     __solExpDragOver?: (path: string, evt: DragEvent) => void
