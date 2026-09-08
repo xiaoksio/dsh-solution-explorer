@@ -19,6 +19,8 @@ import { json, readJsonBody, parseQuery } from './host/http-util.ts'
 import { SECTION_ORDER, EXPLORER_GUIDANCE } from './host/prompt.ts'
 import { Config } from './host/config.ts'
 import { getRoutes, postRoutes } from './host/routes/index.ts'
+import { clearLlmModelsCache } from './host/routes/llm.ts'
+import type { LlmLlmLike } from './host/routes/context.ts'
 import { createTerminalState, type SubprocessServiceLike } from './host/terminal/state.ts'
 import { createTerminalSessions } from './host/terminal/session.ts'
 import { createTerminalStream } from './host/terminal/sse.ts'
@@ -87,6 +89,7 @@ export function apply(ctx: Context, config: Config = {}): void {
         payload: over.payload ?? {},
         root: over.root ?? '',
         files: over.files ?? [],
+        llm: ctx.get('llm') as LlmLlmLike | undefined,
         getConfig: (): Config => effectiveConfig,
         setConfig: (next: Config): void => { effectiveConfig = next },
         persist: async (next: Config): Promise<void> => {
@@ -164,6 +167,12 @@ export function apply(ctx: Context, config: Config = {}): void {
       for (const dispose of disposers) dispose()
     }
   }, 'dsh-solution-explorer: HTTP routes')
+
+  // Model topology changed (adapter routes/catalog) → drop the AI-models cache
+  // so the picker re-reads the host's current providers/models on next request.
+  ctx.effect(() => {
+    return ctx.on('llm/adapters-updated', () => clearLlmModelsCache())
+  }, 'dsh-solution-explorer: llm model cache invalidation')
 
   // Host teardown / profile reload: every terminal session is killed so no
   // shell process outlives the plugin.

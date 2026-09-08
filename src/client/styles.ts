@@ -105,13 +105,23 @@ export const STYLES = `
 
 .sol-exp-commit-input::placeholder { color:var(--dsw-alias-label-tertiary,#6e6e6e); }
 
-.sol-exp-commit-row { display:block; margin-top:6px; }
+.sol-exp-commit-row { display:flex; gap:6px; margin-top:6px; }
 
-.sol-exp-commit-btn { width:100%; padding:5px 0; border:none; border-radius:6px; background:var(--dsw-alias-button-info-fill,#3964fe); color:#fff; font-size:13px; font-weight:500; cursor:pointer; line-height:20px; transition:background-color 120ms ease; }
+.sol-exp-commit-btn { flex:1; width:100%; padding:5px 0; border:none; border-radius:6px; background:var(--dsw-alias-button-info-fill,#3964fe); color:#fff; font-size:13px; font-weight:500; cursor:pointer; line-height:20px; transition:background-color 120ms ease; }
 
 .sol-exp-commit-btn:hover:not(:disabled) { background:var(--dsw-alias-button-info-hover,#679efe); }
 
 .sol-exp-commit-btn:disabled { opacity:.4; cursor:default; }
+
+.sol-exp-ai-btn { flex:none; width:30px; padding:0; border:none; border-radius:6px; background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.08)); color:var(--dsw-alias-label-primary,#d4d4d4); font-size:13px; line-height:30px; cursor:pointer; transition:background-color 120ms ease; }
+
+.sol-exp-ai-btn:hover:not(:disabled) { background:var(--dsw-alias-interactive-bg-active,rgba(0,120,212,0.2)); }
+
+.sol-exp-ai-btn:disabled { opacity:.4; cursor:default; }
+
+.sol-exp-ai-spin { animation: sol-exp-ai-spin 1s linear infinite; }
+
+@keyframes sol-exp-ai-spin { to { transform: rotate(360deg); } }
 
 .sol-exp-commit-branch { font-size:11px; color:var(--dsw-alias-label-tertiary,#6e6e6e); }
 

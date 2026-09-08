@@ -70,13 +70,13 @@ export function registerContextMenuBridges(deps: ContextMenuDeps): () => void {
         })
       })).json();
       if (!result.ok) {
-        alert("创建失败: " + (result.error?.message || ""));
+        showToast("创建失败: " + (result.error?.message || ""), true);
         return;
       }
       loadTree(deps);
       deps.loadGitStatus?.();
     } catch (err) {
-      alert("创建失败: " + (err.message || String(err)));
+      showToast("创建失败: " + (err.message || String(err)), true);
     }
   };
 
@@ -229,7 +229,7 @@ export function registerContextMenuBridges(deps: ContextMenuDeps): () => void {
       editorStore.root = "";
       notifyEditorListeners();
     }
-    if (failed) alert(failed + " 项删除失败");
+    if (failed) showToast(failed + " 项删除失败", true);
     // Silent refresh: reconcile the tree in place and update SCM state — no
     // loading flash, no full-panel rebuild.
     if (state.tree.treeState) refreshTreeSilent(deps);

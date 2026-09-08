@@ -46,6 +46,8 @@ export interface ScmState {
   gitChangesCount: number
   commitMessage: string
   committing: boolean
+  /** Whether an AI commit-message generation is in flight. */
+  aiGenerating: boolean
   /** SCM panel section fold state (conflicts/changes/staged/repository/commits). */
   collapsedSections: Set<string>
   /** SCM top/bottom split percentage. */
@@ -182,6 +184,7 @@ export function createInitialState(): AppState {
       gitChangesCount: 0,
       commitMessage: '',
       committing: false,
+      aiGenerating: false,
       collapsedSections: new Set<string>(),
       scmSplit: 55,
       scmDragging: false,

@@ -20,6 +20,12 @@ export function SettingsPage() {
 
 			const [termMaxHeight, setTermMaxHeight] = useState("1000");
 
+			const [commitModel, setCommitModel] = useState("");
+
+			const [aiModels, setAiModels] = useState([] as Array<{ provider: string; providerName: string; model: string; name: string }>);
+
+			const [aiModelsOk, setAiModelsOk] = useState(true);
+
 			const [saved, setSaved] = useState(false);
 
 			useEffect(() => {
@@ -46,7 +52,21 @@ export function SettingsPage() {
 
 					setTermMaxHeight(String(typeof res.value.terminalMaxHeight === "number" ? res.value.terminalMaxHeight : 1000));
 
+					setCommitModel(typeof res.value.commitModel === "string" ? res.value.commitModel : "");
+
 				}).catch(() => {});
+
+				fetch("/solution-explorer/llm-models").then((r) => r.json()).then((res) => {
+
+					if (!alive) return;
+
+					if (!res || !res.ok || !Array.isArray(res.value)) { setAiModelsOk(false); setAiModels([]); return; }
+
+					setAiModelsOk(true);
+
+					setAiModels(res.value);
+
+				}).catch(() => { if (alive) { setAiModelsOk(false); setAiModels([]); } });
 
 				return () => { alive = false };
 
@@ -74,6 +94,8 @@ export function SettingsPage() {
 
 					terminalMaxTabs: Math.min(16, Math.max(2, parseInt(termTabs, 10) || 8)),
 
+					commitModel,
+
 				}) }).then((r) => r.json()).then((res) => {
 
 					if (res && res.ok) {
@@ -85,7 +107,7 @@ export function SettingsPage() {
 
 			};
 
-			const reset = () => { setWidth("280"); setAutoOpen(true); setShowHidden(false); setPatterns(""); setTermShell(""); setTermHeight("400"); setTermTabs("8"); setTermMaxHeight("1000"); };
+			const reset = () => { setWidth("280"); setAutoOpen(true); setShowHidden(false); setPatterns(""); setTermShell(""); setTermHeight("400"); setTermTabs("8"); setTermMaxHeight("1000"); setCommitModel(""); };
 
 			const field = (label, hint, control) => h("div", { className: "sol-set-field" },
 
@@ -166,6 +188,38 @@ export function SettingsPage() {
 					field(t("settings.terminal.tabs.label"), t("settings.terminal.tabs.hint"),
 
 						h("input", { className: "sol-set-input", type: "number", min: 2, max: 16, value: termTabs, onChange: (e) => setTermTabs(e.target.value) }))),
+
+				card(t("settings.group.ai"), t("settings.group.ai.desc"),
+
+					aiModelsOk
+
+						? field(t("settings.ai.model.label"), t("settings.ai.model.hint"),
+
+							h("select", { className: "sol-set-input", value: commitModel, onChange: (e) => setCommitModel((e.target as HTMLSelectElement).value) },
+
+								h("option", { value: "" }, t("settings.ai.none")),
+
+								(() => {
+
+									const groups: Array<{ providerName: string; models: typeof aiModels }> = [];
+
+									for (const m of aiModels) {
+
+										const g = groups[groups.length - 1];
+
+										if (g && g.providerName === m.providerName) g.models.push(m);
+
+										else groups.push({ providerName: m.providerName, models: [m] });
+
+									}
+
+									return groups.map((g) => h("optgroup", { key: g.providerName, label: g.providerName },
+
+										g.models.map((m) => h("option", { key: m.provider + "|" + m.model, value: m.provider + "|" + m.model }, m.name))));
+
+								})()))
+
+						: field(t("settings.ai.model.label"), "", h("span", { className: "sol-set-hint", style: { color: "var(--dsw-alias-label-tertiary,#6e6e6e)" } }, t("settings.ai.unavailable")))),
 
 				h("div", { className: "sol-set-actions" },
 

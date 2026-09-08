@@ -6,6 +6,8 @@
 
 import { t } from "../locales.ts"
 
+import { showToast } from "../shared/ui.ts"
+
 import { gitRoot, type AppState } from "../state/store.ts"
 
 import { buildSCMTopHTML } from "./scm-view.ts"
@@ -195,9 +197,9 @@ export async function doCommit(deps: ActionsDeps) {
       state.scm.commitMessage = "";
       await loadGitStatus(deps);
       await loadTree(deps);
-    } else alert(t("scm.commitFailed") + ": " + (result.error?.message || ""));
+    } else showToast(t("scm.commitFailed") + ": " + (result.error?.message || ""), true);
   } catch (err) {
-    alert(t("scm.commitFailed") + ": " + err.message);
+    showToast(t("scm.commitFailed") + ": " + err.message, true);
   }
   state.scm.committing = false;
   render();

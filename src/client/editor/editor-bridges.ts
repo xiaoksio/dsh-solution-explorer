@@ -10,6 +10,8 @@ import { diffStore, notifyDiffListeners } from "../state/diff-store.ts"
 
 import { gitRoot, type AppState } from "../state/store.ts"
 
+import { showToast } from "../shared/ui.ts"
+
 import { loadTree } from "../explorer/tree-render.ts"
 
 export interface EditorBridgesDeps {
@@ -70,10 +72,10 @@ export function registerEditorBridges(deps: EditorBridgesDeps): () => void {
           content: editorStore.content
         })
       })).json();
-      if (!result.ok) alert("保存失败: " + (result.error?.message || ""));
+      if (!result.ok) showToast("保存失败: " + (result.error?.message || ""), true);
       else { await deps.loadGitStatus?.(deps.actionsDeps); await loadTree({ state, render }); }
     } catch (err) {
-      alert("保存失败: " + (err.message || String(err)));
+      showToast("保存失败: " + (err.message || String(err)), true);
     }
     editorStore.saving = false;
     notifyEditorListeners();

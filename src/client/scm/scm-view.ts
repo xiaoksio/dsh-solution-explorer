@@ -51,6 +51,8 @@ export function buildSCMTopHTML(scm: ScmState) {
 
             <button class="sol-exp-commit-btn" onclick="window.__solExpCommit()" ${scm.committing || !scm.commitMessage.trim() ? "disabled" : ""}>${scm.committing ? t("scm.committing") : t("scm.commit.button")}</button>
 
+            <button class="sol-exp-ai-btn" title="${t("scm.ai.gen")}" onclick="window.__solExpGenCommitMsg()" ${scm.aiGenerating || !(scm.gitStatus?.staged?.length) ? "disabled" : ""}><svg class="${scm.aiGenerating ? "sol-exp-ai-spin" : ""}" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3.5 9.2 6.4l3.3.4-2.5 2.3.8 3.4L8 10.9 5.2 12.5l.8-3.4L3.5 6.8l3.3-.4z"/><path d="M13 1.5l.4 1.1L14.5 3l-1.1.4-.4 1.1-.4-1.1-1.1-.4 1.1-.4z"/><path d="M3 11.5l.3.7.7.3-.7.3-.3.7-.3-.7-.7-.3.7-.3z"/></svg></button>
+
           </div>
 
         </div>
@@ -143,6 +145,8 @@ export function buildSCMContent(scm: ScmState, commits: CommitState, root: strin
           <div class="sol-exp-commit-row">
 
             <button class="sol-exp-commit-btn" onclick="window.__solExpCommit()" ${scm.committing || !scm.commitMessage.trim() ? "disabled" : ""}>${scm.committing ? t("scm.committing") : t("scm.commit.button")}</button>
+
+            <button class="sol-exp-ai-btn" title="${t("scm.ai.gen")}" onclick="window.__solExpGenCommitMsg()" ${scm.aiGenerating || !(scm.gitStatus?.staged?.length) ? "disabled" : ""}><svg class="${scm.aiGenerating ? "sol-exp-ai-spin" : ""}" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3.5 9.2 6.4l3.3.4-2.5 2.3.8 3.4L8 10.9 5.2 12.5l.8-3.4L3.5 6.8l3.3-.4z"/><path d="M13 1.5l.4 1.1L14.5 3l-1.1.4-.4 1.1-.4-1.1-1.1-.4 1.1-.4z"/><path d="M3 11.5l.3.7.7.3-.7.3-.3.7-.3-.7-.7-.3.7-.3z"/></svg></button>
 
           </div>
 

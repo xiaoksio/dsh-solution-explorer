@@ -6,6 +6,8 @@ import { langFromPath, highlightToHtml, highlightLinesHtml } from "../highlight.
 
 import { setCaretAt } from "../shared/dom.ts"
 
+import { showToast } from "../shared/ui.ts"
+
 import { parseSideBySide } from "../state/diff-store.ts"
 
 import { editorStore } from "../state/editor-store.ts"
@@ -451,11 +453,11 @@ setDiffDirty(false);
 
 						})).json();
 
-						if (!result.ok) alert("暂存块失败: " + (result.error?.message || ""));
+						if (!result.ok) showToast("暂存块失败: " + (result.error?.message || ""), true);
 
 						else window.__solExpRefreshSCM?.();
 
-					} catch (err) { alert("暂存块失败: " + (err.message || String(err))); }
+					} catch (err) { showToast("暂存块失败: " + (err.message || String(err)), true); }
 
 				};
 
@@ -701,13 +703,13 @@ setDiffDirty(false);
 
 						})).json();
 
-						if (!result.ok) alert("保存失败: " + (result.error?.message || ""));
+						if (!result.ok) showToast("保存失败: " + (result.error?.message || ""), true);
 
 						else window.__solExpRefreshSCM?.();
 
 					} catch (err) {
 
-						alert("保存失败: " + (err.message || String(err)));
+						showToast("保存失败: " + (err.message || String(err)), true);
 
 					}
 

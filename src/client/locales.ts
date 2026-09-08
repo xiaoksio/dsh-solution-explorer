@@ -174,6 +174,17 @@ const zh = {
   'settings.terminal.tabs.hint': '2–16',
   'settings.hidden.label': '显示隐藏文件',
   'settings.hidden.hint': '显示以 . 开头的文件（.git 仍隐藏）',
+  'settings.group.ai': 'AI 提交描述',
+  'settings.group.ai.desc': '用宿主已配置的模型从 staged diff 生成提交信息。',
+  'settings.ai.model.label': '生成描述模型',
+  'settings.ai.model.hint': '选择用于生成提交信息的模型；留空禁用该功能',
+  'settings.ai.unavailable': '宿主未提供 AI 模型服务',
+  'settings.ai.none': '（未配置任何模型）',
+  'scm.ai.gen': 'AI 生成提交信息',
+  'scm.ai.generating': '生成中...',
+  'scm.ai.nostaged': '没有已暂存的变更，无法生成',
+  'scm.ai.unconfigured': '请先在设置「AI 提交描述」中选择模型',
+  'scm.ai.failed': 'AI 生成失败：',
 }
 
 const en: Record<SolutionExplorerKey, string> = {
@@ -335,6 +346,17 @@ const en: Record<SolutionExplorerKey, string> = {
   'settings.terminal.tabs.hint': '2–16',
   'settings.hidden.label': 'Show hidden files',
   'settings.hidden.hint': 'Show dot-prefixed files (.git stays hidden)',
+  'settings.group.ai': 'AI commit message',
+  'settings.group.ai.desc': 'Generate a commit message from the staged diff with a host-configured model.',
+  'settings.ai.model.label': 'Message model',
+  'settings.ai.model.hint': 'Model used to generate commit messages; empty disables the feature',
+  'settings.ai.unavailable': 'Host provides no AI model service',
+  'settings.ai.none': '(no model configured)',
+  'scm.ai.gen': 'Generate commit message with AI',
+  'scm.ai.generating': 'Generating...',
+  'scm.ai.nostaged': 'No staged changes to summarize',
+  'scm.ai.unconfigured': 'Pick a model under Settings › AI commit message first',
+  'scm.ai.failed': 'AI generation failed: ',
 }
 
 export const dictionaries = { zh, en }

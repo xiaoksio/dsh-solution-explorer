@@ -8,6 +8,8 @@ import type { AppState } from "../state/store.ts"
 
 import { loadTree } from "./tree-render.ts"
 
+import { showToast } from "../shared/ui.ts"
+
 export interface ClipboardDeps {
   state: AppState
   render: () => void
@@ -70,11 +72,11 @@ export function registerClipboardBridges(deps: ClipboardDeps): () => void {
       const tgt = norm(targetDir);
       const parent = src.includes("/") ? src.slice(0, src.lastIndexOf("/")) : "";
       if (mode === "cut" && parent === tgt) {
-        alert("已在目标目录，无需移动");
+        showToast("已在目标目录，无需移动", true);
         return;
       }
       if (tgt && (tgt === src || tgt.startsWith(src + "/"))) {
-        alert("不能移动到自身内部");
+        showToast("不能移动到自身内部", true);
         return;
       }
     }
@@ -99,7 +101,7 @@ export function registerClipboardBridges(deps: ClipboardDeps): () => void {
       failed++;
       console.warn("[sol-exp] paste error", src, err);
     }
-    if (failed) alert(failed + " 项粘贴失败");
+    if (failed) showToast(failed + " 项粘贴失败", true);
     render();
     loadTree(deps);
     deps.loadGitStatus?.(deps);
@@ -125,7 +127,7 @@ export function registerClipboardBridges(deps: ClipboardDeps): () => void {
     for (const f of Array.from(files as Iterable<File>)) {
       if (f.size > 50 * 1024 * 1024) {
         skipped++;
-        alert("文件过大（>50MB）跳过: " + f.name);
+        showToast("文件过大（>50MB）跳过: " + f.name);
         continue;
       }
       try {
@@ -153,7 +155,7 @@ export function registerClipboardBridges(deps: ClipboardDeps): () => void {
         console.warn("[sol-exp] upload error", f.name, err);
       }
     }
-    if (failed) alert(failed + " 个文件上传失败");
+    if (failed) showToast(failed + " 个文件上传失败", true);
     render();
     loadTree(deps);
     deps.loadGitStatus?.(deps);
@@ -182,12 +184,12 @@ export function registerClipboardBridges(deps: ClipboardDeps): () => void {
         const src = norm(raw);
         const parent = src.includes("/") ? src.slice(0, src.lastIndexOf("/")) : "";
         if (src === tgt || tgt.startsWith(src + "/")) {
-          alert("不能移动到自身内部");
+          showToast("不能移动到自身内部", true);
           render();
           return;
         }
         if (parent === tgt) {
-          alert("已在目标目录，无需移动");
+          showToast("已在目标目录，无需移动", true);
           render();
           return;
         }
@@ -213,7 +215,7 @@ export function registerClipboardBridges(deps: ClipboardDeps): () => void {
       failed++;
       console.warn("[sol-exp] move error", src, err);
     }
-    if (failed) alert(failed + " 项移动失败");
+    if (failed) showToast(failed + " 项移动失败", true);
     render();
     loadTree(deps);
     deps.loadGitStatus?.(deps);

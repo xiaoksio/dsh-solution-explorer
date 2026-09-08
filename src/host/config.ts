@@ -18,6 +18,8 @@ export interface Config {
   terminalHeight?: number
   /** Max bottom-terminal panel height in px (drag limit). */
   terminalMaxHeight?: number
+  /** Model used for AI commit-message generation, as `provider|model`. Empty = not configured. */
+  commitModel?: string
 }
 
 export const Config: z<Config> = z.object({
@@ -29,4 +31,5 @@ export const Config: z<Config> = z.object({
   terminalMaxTabs: z.number().step(1).min(2).max(16).default(8),
   terminalHeight: z.number().step(1).min(120).max(480).default(400),
   terminalMaxHeight: z.number().step(1).min(240).max(1080).default(1000),
+  commitModel: z.string().default(''),
 })

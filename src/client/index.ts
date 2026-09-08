@@ -109,6 +109,8 @@ declare global {
 
     __solExpCommitMsg?: (msg: string) => void
 
+    __solExpGenCommitMsg?: () => Promise<void>
+
     __solExpCommit?: () => void
 
     __solExpStage?: (files: string[]) => void
