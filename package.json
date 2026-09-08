@@ -1,7 +1,7 @@
 {
   "name": "dsh-solution-explorer",
-  "description": "DSH Web GUI right sidebar: VS Code-style file explorer plus source control (git status, stage/unstage/discard, commit, diff, commit graph, sync fetch/pull/push, branch/remote management, git init, multi-repo switch, color-coded file status, file-type icons, image preview) with an editable full-file diff view (hunk stage/revert), a syntax-highlighted editor (15 languages), file operations (new/move/copy/delete), a collapsible icon rail, a multi-tab bottom terminal (ConPTY), and save.",
-  "version": "0.6.0",
+  "description": "DSH Web GUI right sidebar: VS Code-style file explorer plus source control (git status, stage/unstage/discard, commit, diff, commit graph, sync fetch/pull/push, branch/remote management, git init, multi-repo switch, color-coded file status, file-type icons, image preview) with an editable full-file diff view (hunk stage/revert), a syntax-highlighted editor (15 languages), file operations (new/move/copy/delete), a collapsible icon rail, a multi-tab bottom terminal (ConPTY), AI-generated commit messages from a host-configured model, and save.",
+  "version": "0.6.1",
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/types/index.d.ts",

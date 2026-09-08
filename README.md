@@ -26,7 +26,10 @@
   indicators.
 - **Source Control** — staged / unstaged / untracked change lists with
   stage / unstage / discard (per-file or all), commit with a message, and a
-  branch info bar. **Diff view**: full-file side-by-side compare with an
+  branch info bar. **AI commit message**: pick a host-configured model in
+  Settings and tap the ✨-icon beside the commit box to generate a Conventional
+  Commits draft from the staged diff (optionally guided by the repo's
+  AGENTS.md). **Diff view**: full-file side-by-side compare with an
   editable right column (Enter splits lines, backspace/delete merges, NBSP
   placeholders), a middle gutter to stage (⤒) or revert (↩) individual hunks,
   Ctrl+S to save. **Commit Graph**: an SVG history view with
