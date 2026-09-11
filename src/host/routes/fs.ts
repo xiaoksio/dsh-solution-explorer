@@ -164,6 +164,7 @@ export const fsPost: Record<string, Handler> = {
     if (typeof payload.terminalMaxHeight === 'number') next.terminalMaxHeight = Math.min(1080, Math.max(240, Math.floor(payload.terminalMaxHeight)))
     if (typeof payload.commitModel === 'string') next.commitModel = payload.commitModel
     if (Array.isArray(payload.filterPatterns)) next.filterPatterns = payload.filterPatterns.filter((x): x is string => typeof x === 'string')
+    if (typeof payload.hideOfficialRightbarExpand === 'boolean') next.hideOfficialRightbarExpand = payload.hideOfficialRightbarExpand
     const parsed = Config(next)
     setConfig(parsed)
     await persist(parsed)

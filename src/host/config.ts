@@ -20,6 +20,13 @@ export interface Config {
   terminalMaxHeight?: number
   /** Model used for AI commit-message generation, as `provider|model`. Empty = not configured. */
   commitModel?: string
+  /**
+   * Hide the DSH built-in right-bar expand button (`[data-sidebar-right-expand]`)
+   * shown while the official right sidebar is collapsed, so the pane stays clean
+   * when this plugin owns the right side. The right-bar service itself stays
+   * intact — only the button's CSS is suppressed.
+   */
+  hideOfficialRightbarExpand?: boolean
 }
 
 export const Config: z<Config> = z.object({
@@ -32,4 +39,5 @@ export const Config: z<Config> = z.object({
   terminalHeight: z.number().step(1).min(120).max(480).default(400),
   terminalMaxHeight: z.number().step(1).min(240).max(1080).default(1000),
   commitModel: z.string().default(''),
+  hideOfficialRightbarExpand: z.boolean().default(true),
 })

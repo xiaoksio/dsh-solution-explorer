@@ -427,6 +427,20 @@ export function mountPanel(ctx: ClientContext): void {
 				const applySettings = () => {
 					fetch("/solution-explorer/settings").then((r) => r.json()).then((res) => {
 						if (res && res.ok && res.value) {
+							// Hide the DSH built-in right-bar expand button while it is
+							// collapsed (the right-bar service stays intact — only the
+							// button's CSS is suppressed).
+							const hideRightbar = !!res.value.hideOfficialRightbarExpand;
+							const styleId = "sol-exp-hide-rightbar-expand";
+							const existing = document.getElementById(styleId);
+							if (hideRightbar && !existing) {
+								const style = document.createElement("style");
+								style.id = styleId;
+								style.textContent = "[data-sidebar-right-expand]{display:none !important}";
+								document.head.appendChild(style);
+							} else if (!hideRightbar && existing) {
+								existing.remove();
+							}
 							if (typeof res.value.defaultWidth === "number" && res.value.defaultWidth >= PANEL_MIN && res.value.defaultWidth <= PANEL_MAX) state.layout.PANEL_WIDTH = res.value.defaultWidth;
 							if (typeof res.value.autoOpen === "boolean") state.layout.panelAutoOpen = res.value.autoOpen;
 							if (typeof res.value.terminalHeight === "number") state.terminal.terminalHeight = res.value.terminalHeight;
@@ -778,6 +792,8 @@ export function mountPanel(ctx: ClientContext): void {
 					window.removeEventListener("sol-exp-settings-saved", applySettings);
 
 					clearInterval(autoRefreshTimer);
+
+					document.getElementById("sol-exp-hide-rightbar-expand")?.remove();
 
 				};
 

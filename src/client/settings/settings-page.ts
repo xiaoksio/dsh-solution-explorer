@@ -12,6 +12,8 @@ export function SettingsPage() {
 
 			const [showHidden, setShowHidden] = useState(false);
 
+			const [hideRightbarExpand, setHideRightbarExpand] = useState(false);
+
 			const [termShell, setTermShell] = useState("");
 
 			const [termHeight, setTermHeight] = useState("400");
@@ -43,6 +45,8 @@ export function SettingsPage() {
 					setPatterns((res.value.filterPatterns || []).join(", "));
 
 					setShowHidden(!!res.value.showHidden);
+
+					setHideRightbarExpand(!!res.value.hideOfficialRightbarExpand);
 
 					setTermShell(typeof res.value.terminalShell === "string" ? res.value.terminalShell : "");
 
@@ -84,6 +88,8 @@ export function SettingsPage() {
 
 					showHidden,
 
+					hideOfficialRightbarExpand: hideRightbarExpand,
+
 					filterPatterns: patterns.split(",").map((s) => s.trim()).filter((s) => s.length > 0),
 
 					terminalShell: termShell.trim(),
@@ -107,7 +113,7 @@ export function SettingsPage() {
 
 			};
 
-			const reset = () => { setWidth("280"); setAutoOpen(true); setShowHidden(false); setPatterns(""); setTermShell(""); setTermHeight("400"); setTermTabs("8"); setTermMaxHeight("1000"); setCommitModel(""); };
+			const reset = () => { setWidth("280"); setAutoOpen(true); setShowHidden(false); setHideRightbarExpand(false); setPatterns(""); setTermShell(""); setTermHeight("400"); setTermTabs("8"); setTermMaxHeight("1000"); setCommitModel(""); };
 
 			const field = (label, hint, control) => h("div", { className: "sol-set-field" },
 
@@ -154,6 +160,14 @@ export function SettingsPage() {
 						h("label", { className: "sol-set-sw" },
 
 							h("input", { type: "checkbox", checked: showHidden, onChange: (e) => setShowHidden(e.target.checked) }),
+
+							h("span", { className: "sol-set-sw-track" }, h("span", { className: "sol-set-sw-thumb" })))),
+
+					field(t("settings.hideOfficialRightbarExpand.label"), t("settings.hideOfficialRightbarExpand.hint"),
+
+						h("label", { className: "sol-set-sw" },
+
+							h("input", { type: "checkbox", checked: hideRightbarExpand, onChange: (e) => setHideRightbarExpand(e.target.checked) }),
 
 							h("span", { className: "sol-set-sw-track" }, h("span", { className: "sol-set-sw-thumb" })))),
 
