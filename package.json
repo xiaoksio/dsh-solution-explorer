@@ -32,8 +32,8 @@
   },
   "scripts": {
     "clean": "node -e \"const fs=require('node:fs');fs.rmSync('lib',{recursive:true,force:true});for(const f of ['tsconfig.host.tsbuildinfo','tsconfig.client.tsbuildinfo'])fs.rmSync(f,{force:true})\"",
-    "build": "pnpm run clean && tsc -b && tsdown",
-    "prepare": "tsdown",
+    "build": "pnpm run clean && node scripts/gen-pdfjs-assets.mjs && tsc -b && tsdown",
+    "prepare": "node scripts/gen-pdfjs-assets.mjs && tsdown",
     "watch": "tsdown --watch"
   },
   "peerDependencies": {
@@ -98,6 +98,7 @@
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
     "lightningcss": "^1.32.0",
+    "pdfjs-dist": "^6.3.289",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tsdown": "0.22.2",

@@ -3,6 +3,9 @@ lib/
 dist/
 *.tsbuildinfo
 
+# Generated at build time by scripts/gen-pdfjs-assets.mjs
+src/client/generated/
+
 # Dependencies
 node_modules/
 
