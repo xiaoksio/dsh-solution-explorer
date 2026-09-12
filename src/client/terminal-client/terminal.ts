@@ -15,6 +15,17 @@ import { t } from "../locales.ts"
 import { showToast } from "../shared/ui.ts"
 
 import { gitRoot, type AppState } from "../state/store.ts"
+import { commands } from '../commands.ts'
+
+import { createElement as h } from "react"
+
+import { createRoot } from "react-dom/client"
+
+import { flushSync } from "react-dom"
+
+import type { Root } from "react-dom/client"
+
+import { TerminalShell } from "./TerminalShell.ts"
 
 const TERM_CELL_W = 9;
 const TERM_CELL_H = 18;
@@ -56,6 +67,30 @@ export function createTerminalController({ state, render }: TerminalDeps): Termi
     }
   };
 
+  let shellRoot: Root | null = null;
+
+  /** Render the shell chrome (React) for the current tab set. */
+  const renderShell = () => {
+    if (shellRoot === null) return;
+    const tabs = state.terminal.terminalTabs.map((tab) => ({ title: tab.title, shell: tab.shell, exited: !!tab.exited }));
+    // flushSync: the controller reads the rendered body right after this call.
+    flushSync(() => {
+      shellRoot!.render(h(TerminalShell, {
+        tabs,
+        active: state.terminal.terminalActiveTab,
+        canAdd: !(state.terminal.terminalBusy || state.terminal.terminalTabs.length >= state.terminal.terminalMaxTabs),
+        labels: {
+          tab: t("panel.terminal"),
+          close: t("terminal.close") || t("terminal.new"),
+          add: t("terminal.new"),
+        },
+        onActivate: (i) => activateTerminalTab(i),
+        onClose: (i) => { void closeTerminalTab(i) },
+        onAdd: () => { void addTerminalTab() },
+      }));
+    });
+  };
+
   const ensureTerminalShell = () => {
     if (state.terminal.terminalShellEl !== null) return state.terminal.terminalShellEl;
     const shell = document.createElement("div");
@@ -64,8 +99,17 @@ export function createTerminalController({ state, render }: TerminalDeps): Termi
     shell.style.height = "0px";
     shell.style.opacity = "0";
     shell.style.display = "flex";
-    shell.innerHTML = `<div class="sol-exp-term-resize"></div><div class="sol-exp-term-tabs"></div><div class="sol-exp-term-body"><div class="sol-exp-term-exited" style="display:none">${t("terminal.empty")}</div></div>`;
     state.terminal.terminalShellEl = shell;
+    // Chrome (grip + tab strip + pane host) is React; the pane host stays
+    // childless so the controller can mount xterm panes into it.
+    shellRoot = createRoot(shell);
+    renderShell();
+    const bodyEl = shell.querySelector(".sol-exp-term-body") as HTMLElement;
+    const exitedEl = document.createElement("div");
+    exitedEl.className = "sol-exp-term-exited";
+    exitedEl.style.display = "none";
+    exitedEl.textContent = t("terminal.empty");
+    bodyEl.appendChild(exitedEl);
     // Keep the PTY size in sync with the rendered body: any width
     // change (window, sidebar drag, layout shifts) re-fits and
     // rebuilds so pwsh wraps and redraws at the same columns.
@@ -113,40 +157,13 @@ export function createTerminalController({ state, render }: TerminalDeps): Termi
 
   const renderTerminalTabs = () => {
     if (state.terminal.terminalShellEl === null) return;
-    const bar = state.terminal.terminalShellEl.querySelector(".sol-exp-term-tabs");
     const body = state.terminal.terminalShellEl.querySelector(".sol-exp-term-body");
-    bar.innerHTML = "";
-    state.terminal.terminalTabs.forEach((tab, i) => {
-      tab.pane.dataset.index = String(i);
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "sol-exp-term-tab" + (i === state.terminal.terminalActiveTab ? " active" : "");
-      btn.title = t("panel.terminal") + " " + (i + 1) + " — " + tab.shell;
-      const label = document.createElement("span");
-      label.style.cssText = "flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left";
-      label.textContent = (tab.exited ? "✕ " : "▸ ") + tab.title;
-      btn.appendChild(label);
-      const close = document.createElement("button");
-      close.type = "button";
-      close.className = "sol-exp-term-tab-close";
-      close.textContent = "×";
-      close.title = t("terminal.close") || t("terminal.new");
-      close.addEventListener("click", (e) => { e.stopPropagation(); closeTerminalTab(i); });
-      btn.appendChild(close);
-      btn.addEventListener("click", () => activateTerminalTab(i));
-      bar.appendChild(btn);
-    });
-    const add = document.createElement("button");
-    add.type = "button";
-    add.className = "sol-exp-term-add";
-    add.title = t("terminal.new");
-    add.textContent = "+";
-    add.disabled = state.terminal.terminalBusy || state.terminal.terminalTabs.length >= state.terminal.terminalMaxTabs;
-    add.addEventListener("click", () => addTerminalTab());
-    bar.appendChild(add);
+    // The chrome is React; the panes stay imperative (xterm owns them).
+    state.terminal.terminalTabs.forEach((tab, i) => { tab.pane.dataset.index = String(i); });
+    renderShell();
     body.querySelectorAll(".sol-exp-term-pane").forEach((p) => p.classList.toggle("active", p.dataset.index === String(state.terminal.terminalActiveTab)));
     const empty = body.querySelector(".sol-exp-term-exited");
-    empty.style.display = state.terminal.terminalTabs.length === 0 ? "flex" : "none";
+    if (empty) empty.style.display = state.terminal.terminalTabs.length === 0 ? "flex" : "none";
   };
 
   const activateTerminalTab = (i) => {
@@ -509,12 +526,12 @@ export function createTerminalController({ state, render }: TerminalDeps): Termi
     render(); // refresh rail strip / activity button active state
     if (state.terminal.terminalOpen && state.terminal.terminalTabs.length === 0) addTerminalTab();
   };
-  window.__solExpToggleTerminal = toggleTerminal;
+  commands.toggleTerminal = toggleTerminal;
   const onWindowResize = () => { fitTerminal(); scheduleTerminalReboot(); };
   window.addEventListener("resize", onWindowResize);
 
   const dispose = () => {
-    delete window.__solExpToggleTerminal;
+    delete commands.toggleTerminal;
     window.removeEventListener("resize", onWindowResize);
     stopTerminalStream();
     if (state.terminal.termSizeObserver !== null) { state.terminal.termSizeObserver.disconnect(); state.terminal.termSizeObserver = null; }
@@ -523,6 +540,8 @@ export function createTerminalController({ state, render }: TerminalDeps): Termi
     if (state.terminal.terminalRebootTimer !== null) { clearTimeout(state.terminal.terminalRebootTimer); state.terminal.terminalRebootTimer = null; }
     for (const tab of state.terminal.terminalTabs) { fetch("/solution-explorer/terminal/" + tab.id, { method: "DELETE" }).catch(() => {}); }
     state.terminal.terminalTabs = [];
+    shellRoot?.unmount();
+    shellRoot = null;
     if (state.terminal.terminalShellEl !== null) { state.terminal.terminalShellEl.remove(); state.terminal.terminalShellEl = null; }
   };
 

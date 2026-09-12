@@ -10,7 +10,6 @@ import { showToast } from "../shared/ui.ts"
 
 import { gitRoot, type AppState } from "../state/store.ts"
 
-import { buildSCMTopHTML } from "./scm-view.ts"
 
 import { loadTree } from "../explorer/tree-render.ts"
 
@@ -92,43 +91,10 @@ export async function loadGitStatus(deps: ActionsDeps) {
   // the SCM region and the badge, leaving the tree alone.
   if (!hadStatus) render();
 
-  else if (state.scm.gitStatusChanged && state.activeEl) {
+  else if (state.scm.gitStatusChanged) {
 
-    const scmHost = state.activeEl.querySelector("[data-sol-exp-scm-host]");
-
-    if (scmHost && state.currentTab === "scm") {
-
-      // Update only the change-list half; the repository
-      // half (commits list, scroll state) stays untouched.
-      // Compare before writing so an unchanged region is
-      // never repainted, even if the change flag jitters.
-      const scmTop = scmHost.querySelector(".sol-exp-scm-top");
-
-      if (scmTop) {
-
-        const html = buildSCMTopHTML(state.scm);
-
-        if (scmTop.innerHTML !== html) {
-
-          console.log("[sol-exp] rebuild scm top", Date.now());
-
-          scmTop.innerHTML = html;
-
-        }
-
-      }
-
-    }
-
-    const badge = state.activeEl.querySelector(".sol-exp-activity-badge");
-
-    if (badge) {
-
-      if (state.scm.gitChangesCount > 0) badge.textContent = String(state.scm.gitChangesCount);
-
-      else badge.remove();
-
-    }
+    // React renders the SCM region and the activity badge from state.
+    render();
 
   }
 

@@ -1,4 +1,15 @@
-import { escapeHtml } from './dom.ts'
+/**
+ * Toast + centered dialog helpers for the solution-explorer panel.
+ *
+ * The toast is a plain element with `textContent`; the dialog is a React
+ * component rendered through a root on a body-level host, so nothing here
+ * assembles HTML strings.
+ * @module dsh-solution-explorer/client/shared/ui
+ */
+import { createElement as h, useEffect, useRef } from 'react'
+import type { ReactNode } from 'react'
+import { createRoot } from 'react-dom/client'
+import type { Root } from 'react-dom/client'
 
 let toastTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -19,9 +30,11 @@ export function showToast(msg: string, isError = false): void {
 }
 
 // ─── Centered DSH-style dialogs ─────────────────────────────────
-// Replaces native window.confirm/window.prompt with an in-page modal
+// Replaces native window.confirm/window.prompt with an in-page React modal
 // styled with the same --dsw-alias-* tokens as the rest of the panel.
-export function showDialog(opts: {
+
+/** Options accepted by {@link showDialog}. */
+export interface DialogOptions {
   title?: string
   message?: string
   input?: boolean
@@ -30,50 +43,88 @@ export function showDialog(opts: {
   okText?: string
   cancelText?: string
   danger?: boolean
-}): Promise<string | boolean | null> {
+}
+
+/** One dialog occurrence: options plus the localized button labels. */
+function Dialog({ opts, okText, cancelText, onFinish }: {
+  opts: DialogOptions
+  okText: string
+  cancelText: string
+  onFinish(value: string | boolean | null): void
+}): ReactNode {
+  const isPrompt = opts.input === true
+  const inputRef = useRef<HTMLInputElement | null>(null)
+  const okRef = useRef<HTMLButtonElement | null>(null)
+
+  useEffect(() => {
+    if (isPrompt) { inputRef.current?.focus(); inputRef.current?.select() }
+    else okRef.current?.focus()
+  }, [isPrompt])
+
+  const done = (value: string | boolean | null): void => onFinish(value)
+
+  return h('div', {
+    className: 'sol-exp-modal-mask',
+    onKeyDown: (e) => {
+      if (e.key === 'Escape') { e.stopPropagation(); done(isPrompt ? null : false) }
+      else if (e.key === 'Enter') { e.stopPropagation(); e.preventDefault(); done(isPrompt ? (inputRef.current?.value ?? null) : true) }
+    },
+    onMouseDown: (e) => { if (e.target === e.currentTarget) done(isPrompt ? null : false) },
+  },
+    h('div', { className: 'sol-exp-modal-box', role: 'dialog', 'aria-modal': true },
+      opts.title ? h('div', { className: 'sol-exp-modal-title' }, opts.title) : null,
+      opts.message ? h('div', { className: 'sol-exp-modal-message' }, opts.message) : null,
+      isPrompt
+        ? h('input', {
+            ref: inputRef,
+            className: 'sol-exp-modal-input',
+            defaultValue: opts.inputValue || '',
+            placeholder: opts.placeholder || '',
+          })
+        : null,
+      h('div', { className: 'sol-exp-modal-actions' },
+        h('button', { type: 'button', className: 'sol-exp-modal-btn', onClick: () => done(isPrompt ? null : false) }, cancelText),
+        h('button', {
+          ref: okRef,
+          type: 'button',
+          className: 'sol-exp-modal-btn ' + (opts.danger ? 'danger' : 'primary'),
+          onClick: () => done(isPrompt ? (inputRef.current?.value ?? null) : true),
+        }, okText)),
+    ),
+  )
+}
+
+let dialogHost: HTMLElement | null = null
+let dialogRoot: Root | null = null
+
+/** Show a centered confirm/prompt dialog; resolves with the chosen value. */
+export function showDialog(opts: DialogOptions): Promise<string | boolean | null> {
   return new Promise((resolve) => {
     const zh = document.documentElement.lang?.startsWith("zh")
     const isPrompt = opts.input === true
     const okText = opts.okText || (zh ? "确定" : "OK")
     const cancelText = opts.cancelText || (zh ? "取消" : "Cancel")
-    // Last dialog wins: remove any previously open modal.
-    document.querySelectorAll(".sol-exp-modal-mask").forEach((el) => el.remove())
-    const mask = document.createElement("div")
-    mask.className = "sol-exp-modal-mask"
-    mask.innerHTML =
-      '<div class="sol-exp-modal-box" role="dialog" aria-modal="true">' +
-      (opts.title ? `<div class="sol-exp-modal-title">${escapeHtml(opts.title)}</div>` : "") +
-      (opts.message ? `<div class="sol-exp-modal-message">${escapeHtml(opts.message)}</div>` : "") +
-      (isPrompt ? `<input class="sol-exp-modal-input" value="${escapeHtml(opts.inputValue || "")}" placeholder="${escapeHtml(opts.placeholder || "")}" />` : "") +
-      '<div class="sol-exp-modal-actions">' +
-      `<button class="sol-exp-modal-btn" data-act="cancel">${escapeHtml(cancelText)}</button>` +
-      `<button class="sol-exp-modal-btn ${opts.danger ? "danger" : "primary"}" data-act="ok">${escapeHtml(okText)}</button>` +
-      "</div></div>"
+    if (dialogHost === null) {
+      dialogHost = document.createElement("div")
+      document.body.appendChild(dialogHost)
+      dialogRoot = createRoot(dialogHost)
+    }
     let settled = false
-    const finish = (value: string | boolean | null) => {
+    const finish = (value: string | boolean | null): void => {
       if (settled) return
       settled = true
-      mask.remove()
+      // Unmount the dialog; a later showDialog renders the next one.
+      dialogRoot?.render(null)
       resolve(value)
     }
-    const input = mask.querySelector(".sol-exp-modal-input") as HTMLInputElement | null
-    mask.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") { e.stopPropagation(); finish(isPrompt ? null : false) }
-      else if (e.key === "Enter") { e.stopPropagation(); e.preventDefault(); finish(isPrompt ? (input ? input.value : null) : true) }
-    })
-    mask.addEventListener("mousedown", (e) => { if (e.target === mask) finish(isPrompt ? null : false) })
-    ;(mask.querySelector('[data-act="cancel"]') as HTMLElement | null)?.addEventListener("click", () => finish(isPrompt ? null : false))
-    ;(mask.querySelector('[data-act="ok"]') as HTMLElement | null)?.addEventListener("click", () => finish(isPrompt ? (input ? input.value : null) : true))
-    document.body.appendChild(mask)
-    if (input) { input.focus(); input.select() }
-    else { const okBtn = mask.querySelector('[data-act="ok"]') as HTMLElement | null; if (okBtn) okBtn.focus() }
+    dialogRoot!.render(h(Dialog, { opts: { ...opts, input: isPrompt }, okText, cancelText, onFinish: finish }))
   })
 }
 
-export function showConfirm(opts: Parameters<typeof showDialog>[0]): Promise<boolean> {
+export function showConfirm(opts: DialogOptions): Promise<boolean> {
   return showDialog(Object.assign({}, opts, { input: false })) as Promise<boolean>
 }
 
-export function showPrompt(opts: Parameters<typeof showDialog>[0]): Promise<string | null> {
+export function showPrompt(opts: DialogOptions): Promise<string | null> {
   return showDialog(Object.assign({}, opts, { input: true })) as Promise<string | null>
 }

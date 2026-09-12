@@ -1,54 +1,56 @@
 import type { ClientContext } from "@deepseek-ai/dsh-client-runtime/client"
 
-import { Terminal } from "@xterm/xterm"
 
-import { FitAddon } from "@xterm/addon-fit"
 
-import { STYLES } from "./styles.ts"
 
-import { XTERM_CSS } from "./xterm-css.ts"
+import { commands } from "./commands.ts"
 
-import { setLanguage, t } from "./locales.ts"
 
-import { editorStore, notifyEditorListeners } from "./state/editor-store.ts"
+import { setLanguage } from "./locales.ts"
 
-import { diffStore, notifyDiffListeners } from "./state/diff-store.ts"
 
-import { escapeHtml, relTime } from "./shared/dom.ts"
 
-import { showToast, showConfirm, showPrompt } from "./shared/ui.ts"
 
-import { folderIcon, fileIcon, isImageFile, gitStatusClass } from "./explorer/icons.ts"
+
 
 import { createInitialState } from "./state/store.ts"
 
-import { buildExplorerContent, loadTree, refreshTreeSilent, registerTreeBridges } from "./explorer/tree-render.ts"
+import { loadTree, refreshTreeSilent, registerTreeCommands } from "./explorer/tree-render.ts"
 
-import { buildSearchContent, searchFiles, registerSearchBridges } from "./explorer/search.ts"
+import { registerSearchCommands } from "./explorer/search.ts"
 
-import { registerClipboardBridges } from "./explorer/clipboard.ts"
+import { registerClipboardCommands } from "./explorer/clipboard.ts"
 
-import { registerContextMenuBridges } from "./explorer/context-menu.ts"
+import { registerContextMenuCommands } from "./explorer/context-menu.ts"
 
-import { buildSCMTopHTML, buildSCMContent } from "./scm/scm-view.ts"
 
-import { resetGraph, commitsListHTML, renderGraphRow } from "./scm/graph.ts"
-
-import { getCommitDetail, ensureCommitDetailInline, reapplyCommitDetailInline, hideCommitTooltip, scheduleHideCommitTooltip, cancelHideCommitTooltip, showCommitTooltip, loadRecentCommits, loadCommitsPage } from "./scm/history.ts"
+import { getCommitDetail, hideCommitTooltip, scheduleHideCommitTooltip, cancelHideCommitTooltip, showCommitTooltip, loadRecentCommits, loadCommitsPage } from "./scm/history.ts"
 
 import { loadGitStatus, loadRepos, doStage, doUnstage, doDiscard, doCommit } from "./scm/actions.ts"
 
 import { loadRemotes, loadBranches, loadTags } from "./scm/branches.ts"
 
-import { registerScmBridges } from "./scm/bridges.ts"
+import { registerScmCommands } from "./scm/commands.ts"
 
-import { applyGrid, mountColumn, registerGridBridges } from "./layout/grid.ts"
+import { applyGrid, registerGridCommands } from "./layout/grid.ts"
 
 import { waitForFrame } from "./layout/lifecycle.ts"
 
 import { createTerminalController } from "./terminal-client/terminal.ts"
 
-import { registerEditorBridges } from "./editor/editor-bridges.ts"
+import { registerEditorCommands } from "./editor/editor-commands.ts"
+
+import { createElement as h } from "react"
+
+import { createRoot } from "react-dom/client"
+
+import type { Root } from "react-dom/client"
+
+import { flushSync } from "react-dom"
+
+import { PanelRoot } from "./PanelRoot.ts"
+
+import type { PanelActions } from "./PanelRoot.ts"
 
 export function mountPanel(ctx: ClientContext): void {
 			ctx.effect(() => {
@@ -58,45 +60,90 @@ export function mountPanel(ctx: ClientContext): void {
 
 
 
+				let reactRoot: Root | null = null;
 
+				// Panel actions handed to the React tree. Each one calls the
+				// command registered by its domain module, so behaviour is
+				// unchanged while the last commands are still registry-backed.
+				const panelActions: PanelActions = {
+					tab: (tab) => { commands.tab?.(tab) },
+					railOpen: (tab) => { commands.railOpen?.(tab) },
+					togglePanel: () => { commands.togglePanel?.() },
+					toggleTerminal: () => { commands.toggleTerminal?.() },
+					closeMenu: () => { state.contextMenu = null; render() },
+					tree: {
+						select: (path, shift, ctrl, isDir) => { commands.select?.(path, shift, ctrl, isDir) },
+						openFile: (path) => { void commands.openFile?.(path) },
+						contextMenu: (path, x, y, isDir) => { commands.contextMenu?.(path, x, y, isDir) },
+						expandAll: () => { commands.expandAll?.() },
+						collapseAll: () => { commands.collapseAll?.() },
+						newFile: () => { void commands.new?.("file", "") },
+						newDir: () => { void commands.new?.("dir", "") },
+						refresh: () => { commands.refresh?.() },
+						renameCommit: (value) => { void commands.renameCommit?.(value) },
+						renameCancel: () => { commands.renameCancel?.() },
+						dragStart: (path) => { commands.dragStart?.(path) },
+						dragOver: (path) => { commands.dragOver?.(path, undefined as unknown as DragEvent) },
+						drop: (path, e) => { void commands.drop?.(path, e as unknown as DragEvent) },
+					},
+					search: {
+						search: (query) => { commands.search?.(query) },
+						selectFile: (path, isDir) => { void commands.selectFile?.(path, isDir) },
+						contextMenu: (path, x, y, isDir) => { commands.contextMenu?.(path, x, y, isDir) },
+					},
+					scm: {
+						toggleSection: (id) => { commands.toggleSection?.(id) },
+						refresh: () => { commands.refreshSCM?.() },
+						stage: (paths) => { commands.stage?.(paths) },
+						unstage: (paths) => { commands.unstage?.(paths) },
+						discard: (paths) => { commands.discard?.(paths) },
+						stageAll: () => { commands.stageAll?.() },
+						unstageAll: () => { commands.unstageAll?.() },
+						discardAll: () => { commands.discardAll?.() },
+						commitMsg: (v) => { commands.commitMsg?.(v) },
+						commit: () => { commands.commit?.() },
+						genCommitMsg: () => { void commands.genCommitMsg?.() },
+						selectRepo: (p) => { commands.selectRepo?.(p) },
+						remotePanel: () => { void commands.remotePanel?.() },
+						branchPanel: () => { void commands.branchPanel?.() },
+						fetch: () => { void commands.fetch?.() },
+						pull: () => { void commands.pull?.() },
+						push: () => { void commands.push?.() },
+						sync: () => { void commands.sync?.() },
+						remoteName: (v) => { commands.remoteName?.(v) },
+						remoteUrl: (v) => { commands.remoteUrl?.(v) },
+						remoteAdd: () => { void commands.remoteAdd?.() },
+						remoteRemove: (n) => { void commands.remoteRemove?.(n) },
+						remoteSetUrl: (n) => { void commands.remoteSetUrl?.(n) },
+						branchName: (v) => { commands.branchName?.(v) },
+						branchFrom: (v) => { commands.branchFrom?.(v) },
+						branchCreate: () => { void commands.branchCreate?.() },
+						branchCheckout: (n) => { void commands.branchCheckout?.(n) },
+						branchDelete: (n) => { void commands.branchDelete?.(n) },
+						branchRename: (n) => { void commands.branchRename?.(n) },
+						branchMerge: (n) => { void commands.branchMerge?.(n) },
+						branchPublish: (n) => { void commands.branchPublish?.(n) },
+						gitInit: () => { void commands.gitInit?.() },
+						openDiff: (p, s) => { void commands.openDiff?.(p, s) },
+						openFile: (p) => { void commands.openFile?.(p) },
+						selectFile: (p, d) => { void commands.selectFile?.(p, d) },
+						dividerDown: (e) => { commands.scmDividerDown?.(e as PointerEvent) },
+						commitsScroll: (e) => { commands.commitsScroll?.(e as Event) },
+						commitDetail: (hash) => { void commands.commitDetail?.(hash) },
+						commitCheckout: (hash) => { void commands.commitCheckout?.(hash) },
+					},
+				};
 
-
-
-
-				// Persisted collapsed state of SCM sections. Kept in state (not
-				// only as a DOM class) so any render() / silent refresh rebuilds
-				// the section with the class — otherwise the repository section
-				// (and the top-half sections after a status refresh) silently
-				// re-expand and the collapse button looks broken.
-
-
-
-
-
-
-
-
-				const gitRoot = () => state.scm.activeRepo || state.root;
-
-
-				// Cached innerHTML of the recent-commits list: null = not loaded
-				// yet (render shows the loading placeholder), "" = loaded but
-				// empty. render() rebuilds the list from this cache, so a render
-				// landing after the git-log response can never wipe a filled
-				// list back to the placeholder (e.g. tree/repos loads finishing
-				// late after a conversation switch).
-				// Generation counter: bumped on every reload/switch so a git-log
-				// fetch still in flight for the previous repo/branch is discarded
-				// instead of writing stale commits into the current list.
-				// Commit-detail cache (hash -> detail) shared by the inline
-				// expansion and the hover tooltip; cleared on session change.
-				// Hover tooltip state for commit rows (custom tooltip replaces
-				// the native title attribute).
-				// Remotes fetch guard for the "open on GitHub" tooltip link.
-
-
-
-				let loadSeq = 0;
+				function renderReact() {
+					if (!state.activeEl) return;
+					if (reactRoot === null) reactRoot = createRoot(state.activeEl);
+					// Synchronous commit: callers that inspect the SCM DOM right
+					// after render() (divider drag, scroll restore) must not race
+					// React 18's deferred default.
+					flushSync(() => {
+						reactRoot!.render(h(PanelRoot, { state, actions: panelActions }));
+					});
+				}
 
 				function render() {
 
@@ -110,25 +157,11 @@ export function mountPanel(ctx: ClientContext): void {
 
 					setLanguage(document.documentElement.lang?.startsWith("zh") ? "zh" : "en");
 
-					// Folded: render only the compact rail — the expand control
-					// plus the three feature icons — instead of the activity
-					// bar + body. The shell column keeps its border, so the
-					// rail reads as a sibling of the native collapsed sidebar.
-					if (state.layout.panelCollapsed) {
+					// The whole panel renders through the React root now.
+					renderReact();
 
-						// Rail expand control mirrors the native sidebar rail: a
-						// 16px panel-left glyph (same Figma source the shell
-						// swaps in on rail hover), so the folded panel reads as
-						// a sibling of the native collapsed rail.
-						state.activeEl.innerHTML = `<div class="sol-exp-panel sol-exp-panel-rail"><button class="sol-exp-rail-btn" title="${document.documentElement.lang?.startsWith("zh") ? "展开面板" : "Expand panel"}" onclick="window.__solExpTogglePanel()"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" clipRule="evenodd" d="M9.67272 0.522841C10.8339 0.522841 11.76 0.522714 12.4963 0.602493C13.2453 0.683657 13.8789 0.854248 14.4264 1.25197C14.7504 1.48739 15.0355 1.77247 15.2709 2.0965C15.6686 2.64394 15.8392 3.27758 15.9204 4.02655C16.0002 4.7629 16 5.68895 16 6.85014V9.14986C16 10.3111 16.0002 11.2371 15.9204 11.9735C15.8392 12.7224 15.6686 13.3561 15.2709 13.9035C15.0355 14.2275 14.7504 14.5126 14.4264 14.748C13.8789 15.1458 13.2453 15.3163 12.4963 15.3975C11.76 15.4773 10.8339 15.4772 9.67272 15.4772H6.3273C5.16611 15.4772 4.24006 15.4773 3.50371 15.3975C2.75474 15.3163 2.1211 15.1458 1.57366 14.748C1.24963 14.5126 0.964549 14.2275 0.729131 13.9035C0.331407 13.3561 0.160817 12.7224 0.0796529 11.9735C-0.000126137 11.2371 1.25338e-09 10.3111 1.25338e-09 9.14986V6.85014C1.25329e-09 5.68895 -0.000126137 4.7629 0.0796529 4.02655C0.160817 3.27758 0.331407 2.64394 0.729131 2.0965C0.964549 1.77247 1.24963 1.48739 1.57366 1.25197C2.1211 0.854248 2.75474 0.683657 3.50371 0.602493C4.24006 0.522714 5.16611 0.522841 6.3273 0.522841H9.67272ZM5.54303 1.88715V14.1118C5.78636 14.1128 6.04709 14.1169 6.3273 14.1169H9.67272C10.8639 14.1169 11.7032 14.1164 12.3493 14.0465C12.9824 13.9779 13.3497 13.8494 13.6268 13.6482C13.8354 13.4966 14.0195 13.3125 14.1711 13.1039C14.3723 12.8268 14.5007 12.4595 14.5693 11.8264C14.6393 11.1803 14.6398 10.341 14.6398 9.14986V6.85014C14.6398 5.65896 14.6393 4.81967 14.5693 4.1736C14.5007 3.54048 14.3723 3.17318 14.1711 2.89609C14.0195 2.68747 13.8354 2.50337 13.6268 2.35179C13.3497 2.1506 12.9824 2.02212 12.3493 1.95353C11.7032 1.88358 10.8639 1.88307 9.67272 1.88307H6.3273C6.04709 1.88307 5.78636 1.8862 5.54303 1.88715ZM4.1828 1.91166C3.99125 1.9216 3.8148 1.93577 3.65076 1.95353C3.01764 2.02212 2.65034 2.1506 2.37325 2.35179C2.16463 2.50337 1.98052 2.68747 1.82895 2.89609C1.62776 3.17318 1.49928 3.54048 1.43069 4.1736C1.36074 4.81967 1.36023 5.65896 1.36023 6.85014V9.14986C1.36023 10.341 1.36074 11.1803 1.43069 11.8264C1.49928 12.4595 1.62776 12.8268 1.82895 13.1039C1.98052 13.3125 2.16463 13.4966 2.37325 13.6482C2.65034 13.8494 3.01764 13.9779 3.65076 14.0465C3.81478 14.0642 3.99127 14.0774 4.1828 14.0873V1.91166Z"/></svg></button><button class="sol-exp-rail-icon" title="${t("panel.explorer")}" onclick="window.__solExpRailOpen('explorer')"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 3h5l1.5 1.5h6a1 1 0 0 1 1 1V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button><button class="sol-exp-rail-icon" title="${t("file.search")}" onclick="window.__solExpRailOpen('search')"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M9.8 9.8L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button><button class="sol-exp-rail-icon" title="${t("panel.scm")}" onclick="window.__solExpRailOpen('scm')"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" clipRule="evenodd" d="M6 5C6 4.44772 6.44772 4 7 4C7.55228 4 8 4.44772 8 5C8 5.55228 7.55228 6 7 6C6.44772 6 6 5.55228 6 5ZM8 7.82929C9.16519 7.41746 10 6.30622 10 5C10 3.34315 8.65685 2 7 2C5.34315 2 4 3.34315 4 5C4 6.30622 4.83481 7.41746 6 7.82929V16.1707C4.83481 16.5825 4 17.6938 4 19C4 20.6569 5.34315 22 7 22C8.65685 22 10 20.6569 10 19C10 17.7334 9.21506 16.6501 8.10508 16.2101C8.45179 14.9365 9.61653 14 11 14H13C16.3137 14 19 11.3137 19 8V7.82929C20.1652 7.41746 21 6.30622 21 5C21 3.34315 19.6569 2 18 2C16.3431 2 15 3.34315 15 5C15 6.30622 15.8348 7.41746 17 7.82929V8C17 10.2091 15.2091 12 13 12H11C9.87439 12 8.83566 12.3719 8 12.9996V7.82929ZM18 6C18.5523 6 19 5.55228 19 5C19 4.44772 18.5523 4 18 4C17.4477 4 17 4.44772 17 5C17 5.55228 17.4477 6 18 6ZM6 19C6 18.4477 6.44772 18 7 18C7.55228 18 8 18.4477 8 19C8 19.5523 7.55228 20 7 20C6.44772 20 6 19.5523 6 19Z" fill="currentColor"/></svg>${state.scm.gitChangesCount > 0 ? `<span class="sol-exp-activity-badge">${state.scm.gitChangesCount}</span>` : ""}</button><button class="sol-exp-rail-icon sol-exp-terminal-toggle${state.terminal.terminalOpen ? " active" : ""}" title="${document.documentElement.lang?.startsWith("zh") ? "终端" : "Terminal"}" onclick="window.__solExpToggleTerminal()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M4.5 5.5l2.5 2.5-2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 10.5h2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button></div>`;
+					return;
 
-						return;
-
-					}
-
-					state.activeEl.innerHTML = buildHTML();
-					hideCommitTooltip(historyDeps);
-					reapplyCommitDetailInline(historyDeps);
 
 				}
 
@@ -153,71 +186,6 @@ export function mountPanel(ctx: ClientContext): void {
 
 				
 
-				function buildHTML() {
-
-					const activityBarHTML = `
-
-        <div class="sol-exp-activity">
-
-          <div class="sol-exp-activity-btn ${state.currentTab === "explorer" ? "active" : ""}" onclick="window.__solExpTab('explorer')" title="${t("panel.explorer")}">
-
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 3h5l1.5 1.5h6a1 1 0 0 1 1 1V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
-
-          </div>
-
-          <div class="sol-exp-activity-btn ${state.currentTab === "search" ? "active" : ""}" onclick="window.__solExpTab('search')" title="${t("file.search")}">
-
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.3"/><path d="M9.8 9.8L14 14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-
-          </div>
-
-          <div class="sol-exp-activity-btn ${state.currentTab === "scm" ? "active" : ""}" onclick="window.__solExpTab('scm')" title="${t("panel.scm")}">
-
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" clipRule="evenodd" d="M6 5C6 4.44772 6.44772 4 7 4C7.55228 4 8 4.44772 8 5C8 5.55228 7.55228 6 7 6C6.44772 6 6 5.55228 6 5ZM8 7.82929C9.16519 7.41746 10 6.30622 10 5C10 3.34315 8.65685 2 7 2C5.34315 2 4 3.34315 4 5C4 6.30622 4.83481 7.41746 6 7.82929V16.1707C4.83481 16.5825 4 17.6938 4 19C4 20.6569 5.34315 22 7 22C8.65685 22 10 20.6569 10 19C10 17.7334 9.21506 16.6501 8.10508 16.2101C8.45179 14.9365 9.61653 14 11 14H13C16.3137 14 19 11.3137 19 8V7.82929C20.1652 7.41746 21 6.30622 21 5C21 3.34315 19.6569 2 18 2C16.3431 2 15 3.34315 15 5C15 6.30622 15.8348 7.41746 17 7.82929V8C17 10.2091 15.2091 12 13 12H11C9.87439 12 8.83566 12.3719 8 12.9996V7.82929ZM18 6C18.5523 6 19 5.55228 19 5C19 4.44772 18.5523 4 18 4C17.4477 4 17 4.44772 17 5C17 5.55228 17.4477 6 18 6ZM6 19C6 18.4477 6.44772 18 7 18C7.55228 18 8 18.4477 8 19C8 19.5523 7.55228 20 7 20C6.44772 20 6 19.5523 6 19Z" fill="currentColor"/></svg>
-
-            ${state.scm.gitChangesCount > 0 ? `<span class="sol-exp-activity-badge">${state.scm.gitChangesCount}</span>` : ""}
-
-          </div>
-
-          <div class="sol-exp-activity-btn ${state.terminal.terminalOpen ? "active" : ""}" onclick="window.__solExpToggleTerminal()" title="${t("panel.terminal")}">
-
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M4.5 5.5l2.5 2.5-2.5 2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 10.5h2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-
-          </div>
-
-          <div style="flex:1"></div>
-
-          <div class="sol-exp-activity-btn" onclick="window.__solExpTogglePanel()" title="${document.documentElement.lang?.startsWith("zh") ? "收起面板" : "Collapse panel"}">
-
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" clipRule="evenodd" d="M9.67272 0.522841C10.8339 0.522841 11.76 0.522714 12.4963 0.602493C13.2453 0.683657 13.8789 0.854248 14.4264 1.25197C14.7504 1.48739 15.0355 1.77247 15.2709 2.0965C15.6686 2.64394 15.8392 3.27758 15.9204 4.02655C16.0002 4.7629 16 5.68895 16 6.85014V9.14986C16 10.3111 16.0002 11.2371 15.9204 11.9735C15.8392 12.7224 15.6686 13.3561 15.2709 13.9035C15.0355 14.2275 14.7504 14.5126 14.4264 14.748C13.8789 15.1458 13.2453 15.3163 12.4963 15.3975C11.76 15.4773 10.8339 15.4772 9.67272 15.4772H6.3273C5.16611 15.4772 4.24006 15.4773 3.50371 15.3975C2.75474 15.3163 2.1211 15.1458 1.57366 14.748C1.24963 14.5126 0.964549 14.2275 0.729131 13.9035C0.331407 13.3561 0.160817 12.7224 0.0796529 11.9735C-0.000126137 11.2371 1.25338e-09 10.3111 1.25338e-09 9.14986V6.85014C1.25329e-09 5.68895 -0.000126137 4.7629 0.0796529 4.02655C0.160817 3.27758 0.331407 2.64394 0.729131 2.0965C0.964549 1.77247 1.24963 1.48739 1.57366 1.25197C2.1211 0.854248 2.75474 0.683657 3.50371 0.602493C4.24006 0.522714 5.16611 0.522841 6.3273 0.522841H9.67272ZM5.54303 1.88715V14.1118C5.78636 14.1128 6.04709 14.1169 6.3273 14.1169H9.67272C10.8639 14.1169 11.7032 14.1164 12.3493 14.0465C12.9824 13.9779 13.3497 13.8494 13.6268 13.6482C13.8354 13.4966 14.0195 13.3125 14.1711 13.1039C14.3723 12.8268 14.5007 12.4595 14.5693 11.8264C14.6393 11.1803 14.6398 10.341 14.6398 9.14986V6.85014C14.6398 5.65896 14.6393 4.81967 14.5693 4.1736C14.5007 3.54048 14.3723 3.17318 14.1711 2.89609C14.0195 2.68747 13.8354 2.50337 13.6268 2.35179C13.3497 2.1506 12.9824 2.02212 12.3493 1.95353C11.7032 1.88358 10.8639 1.88307 9.67272 1.88307H6.3273C6.04709 1.88307 5.78636 1.8862 5.54303 1.88715ZM4.1828 1.91166C3.99125 1.9216 3.8148 1.93577 3.65076 1.95353C3.01764 2.02212 2.65034 2.1506 2.37325 2.35179C2.16463 2.50337 1.98052 2.68747 1.82895 2.89609C1.62776 3.17318 1.49928 3.54048 1.43069 4.1736C1.36074 4.81967 1.36023 5.65896 1.36023 6.85014V9.14986C1.36023 10.341 1.36074 11.1803 1.43069 11.8264C1.49928 12.4595 1.62776 12.8268 1.82895 13.1039C1.98052 13.3125 2.16463 13.4966 2.37325 13.6482C2.65034 13.8494 3.01764 13.9779 3.65076 14.0465C3.81478 14.0642 3.99127 14.0774 4.1828 14.0873V1.91166Z"/></svg>
-
-          </div>
-
-          </div>
-
-      `;
-
-					let contentHTML = "";
-
-					if (state.currentTab === "scm") contentHTML = '<div class="sol-exp-scm-host" data-sol-exp-scm-host>' + buildSCMContent(state.scm, state.commits, state.root) + '</div>';
-
-					else if (state.currentTab === "search") contentHTML = buildSearchContent(state.search, state.tree, state.root);
-
-					else contentHTML = buildExplorerContent(state.tree, state.clipboard, state.root);
-
-					return `
-
-        <div class="sol-exp-panel" ondragover="event.preventDefault()" ondrop="event.preventDefault();window.__solExpDrop('', event)" oncontextmenu="window.__solExpPanelContextMenu(event)">
-
-          ${activityBarHTML}
-
-          <div class="sol-exp-body"><div class="sol-exp-main">${contentHTML}</div></div>
-
-        </div>
-
-      `;
-
-				}
 
 				
 
@@ -247,7 +215,7 @@ export function mountPanel(ctx: ClientContext): void {
 				
 
 
-				window.__solExpTab = (tab) => {
+				commands.tab = (tab) => {
 
 					state.currentTab = tab as "explorer" | "search" | "scm";
 
@@ -268,11 +236,11 @@ export function mountPanel(ctx: ClientContext): void {
 
 				// A rail feature icon expands the column back and opens that
 				// tab in one click (the rail itself has no body to render).
-				window.__solExpRailOpen = (tab) => {
+				commands.railOpen = (tab) => {
 
 					state.layout.panelCollapsed = false;
 
-					window.__solExpTab(tab);
+					commands.tab(tab);
 
 					applyGrid(gridDeps);
 
@@ -366,7 +334,7 @@ export function mountPanel(ctx: ClientContext): void {
 
 
 
-				window.__solExpTogglePanel = () => {
+				commands.togglePanel = () => {
 
 					// Expand back: drop the folded rail, restore the column at
 					// its stored width preference (panelWidth was never
@@ -397,7 +365,6 @@ export function mountPanel(ctx: ClientContext): void {
 				};
 
 
-				const PANEL_WIDTH_DEFAULT = 280;
 
 
 
@@ -409,7 +376,6 @@ export function mountPanel(ctx: ClientContext): void {
 				// Collapsed rail width mirrors the native sidebar rail (56px:
 				// 10px side padding + 36px control box) so the folded panel
 				// reads as a sibling of the shell's own collapsed sidebar.
-				const PANEL_RAIL = 56;
 
 
 
@@ -539,6 +505,16 @@ export function mountPanel(ctx: ClientContext): void {
 
 					state.tree.treeState = null;
 
+					// Expand state is per-workspace: a path expanded in the old
+					// root means nothing in the new one.
+					state.tree.expandedPaths = new Set();
+
+					state.tree.selectedPaths = new Set();
+
+					state.tree.selectionAnchor = null;
+
+					state.tree.selectedPath = null;
+
 					state.scm.gitStatus = null;
 
 					state.scm.gitChangesCount = 0;
@@ -548,7 +524,7 @@ export function mountPanel(ctx: ClientContext): void {
 					// history starts from the loading placeholder.
 					state.commits.commitsSeq++;
 
-					state.commits.commitsHTML = null;
+					state.commits.rows = null;
 
 					state.commits.commitsPage = 0;
 
@@ -577,23 +553,23 @@ export function mountPanel(ctx: ClientContext): void {
 				}
 
 				// History deps: injected into scm/history functions.
-				const historyDeps = { state, loadRemotes };
+				const historyDeps = { state, loadRemotes, render };
 
 				// Actions deps: injected into scm/actions functions.
 				const actionsDeps = { state, render, loadRecentCommits };
 
-				// Editor bridges deps: injected into editor/editor-bridges.
-				const editorBridgesDeps = { state, render, loadGitStatus, actionsDeps };
+				// Editor commands deps: injected into editor/editor-commands.
+				const EditorCommandsDeps = { state, render, loadGitStatus, actionsDeps };
 
 				// Branches deps: injected into scm/branches functions.
 				const branchesDeps = { state };
 
-				// SCM bridges deps: injected into scm/bridges.
-				const scmBridgesDeps = {
+				// SCM commands deps: injected into scm/commands.
+				const ScmCommandsDeps = {
 					state, render,
 					actionsDeps, historyDeps, branchesDeps,
 					loadGitStatus, loadRepos, loadRecentCommits, loadRemotes, loadBranches, loadTags,
-					loadCommitsPage, getCommitDetail, ensureCommitDetailInline, hideCommitTooltip,
+					loadCommitsPage, getCommitDetail, hideCommitTooltip,
 					doStage, doUnstage, doDiscard, doCommit,
 				};
 
@@ -616,18 +592,16 @@ export function mountPanel(ctx: ClientContext): void {
 
 				}, 4000);
 
-				console.log("[sol-exp] injecting __solExpOpenFile");
-
-				// Explorer bridges (tree interaction + search + clipboard +
+				// Explorer commands (tree interaction + search + clipboard +
 				// context-menu) — registered from their domain modules.
 				const explorerDisposers = [
-					registerTreeBridges({ state, render, loadGitStatus }),
-					registerSearchBridges({ state, render }),
-					registerClipboardBridges({ state, render, loadGitStatus }),
-					registerContextMenuBridges({ state, render, loadGitStatus }),
-					registerScmBridges(scmBridgesDeps),
-					registerGridBridges(gridDeps),
-					registerEditorBridges(editorBridgesDeps),
+					registerTreeCommands({ state, render, loadGitStatus }),
+					registerSearchCommands({ state, render }),
+					registerClipboardCommands({ state, render, loadGitStatus }),
+					registerContextMenuCommands({ state, render, loadGitStatus }),
+					registerScmCommands(ScmCommandsDeps),
+					registerGridCommands(gridDeps),
+					registerEditorCommands(EditorCommandsDeps),
 				];
 
 				return () => {
@@ -648,141 +622,6 @@ export function mountPanel(ctx: ClientContext): void {
 
 					state.layout.resizeHandle?.remove();
 
-					[
-
-						"__solExpTab",
-
-						"__solExpToggleExpand",
-
-						"__solExpSelectFile",
-
-						"__solExpCollapseAll",
-
-						"__solExpExpandAll",
-
-						"__solExpRefresh",
-
-						"__solExpSearch",
-
-						"__solExpRefreshSCM", "__solExpCommitsScroll", "__solExpScmDividerDown", "__solExpSelectRepo", "__solExpCommitDetail", "__solExpCommitCheckout",
-
-						"__solExpCommitMsg",
-
-						"__solExpCommit",
-
-						"__solExpStage",
-
-						"__solExpUnstage",
-
-						"__solExpDiscard",
-
-						"__solExpStageAll",
-
-						"__solExpUnstageAll",
-
-						"__solExpDiscardAll",
-
-						"__solExpToggleSection",
-
-						"__solExpTogglePanel",
-
-						"__solExpRailOpen",
-
-						"__solExpToggleTerminal",
-
-						"__solExpClearSearch",
-
-						"__solExpDeleteFile",
-
-						"__solExpRename",
-
-						"__solExpRenameCommit",
-
-						"__solExpRenameCancel",
-
-						"__solExpContextMenu",
-
-						"__solExpOpenFile",
-
-						"__solExpSaveFile",
-
-						"__solExpGetEditorState",
-
-						"__solExpEditorListeners",
-
-						"__solExpOpenDiff",
-
-						"__solExpGetDiffState",
-
-						"__solExpDiffListeners",
-
-						"__solExpSelect",
-
-						"__solExpCopy",
-
-						"__solExpCut",
-
-						"__solExpPaste",
-
-						"__solExpDragStart",
-
-						"__solExpDragOver",
-
-						"__solExpDrop",
-
-						"__solExpDropFiles",
-
-						"__solExpDeletePaths",
-
-						"__solExpPanelContextMenu",
-
-						"__solExpClearSelection",
-
-						"__solExpNew",
-
-						"__solExpGitInit",
-
-						"__solExpFetch",
-
-						"__solExpPull",
-
-						"__solExpPush",
-
-						"__solExpSync",
-
-						"__solExpRemotePanel",
-
-						"__solExpRemoteName",
-
-						"__solExpRemoteUrl",
-
-						"__solExpRemoteAdd",
-
-						"__solExpRemoteRemove",
-
-						"__solExpRemoteSetUrl",
-
-						"__solExpBranchPanel",
-
-						"__solExpBranchName",
-
-						"__solExpBranchFrom",
-
-						"__solExpBranchCreate",
-
-						"__solExpBranchCheckout",
-
-						"__solExpBranchDelete",
-
-						"__solExpBranchRename",
-
-						"__solExpBranchMerge",
-
-						"__solExpBranchPublish"
-
-					].forEach((k) => delete window[k]);
-
-
 					document.removeEventListener("dragenter", dragGuard);
 
 					document.removeEventListener("dragover", dragGuard);
@@ -792,6 +631,12 @@ export function mountPanel(ctx: ClientContext): void {
 					window.removeEventListener("sol-exp-settings-saved", applySettings);
 
 					clearInterval(autoRefreshTimer);
+
+					// Tear the React root down with the fiber so the panel's
+					// component tree (and its effects) never outlive the mount.
+					reactRoot?.unmount();
+
+					reactRoot = null;
 
 					document.getElementById("sol-exp-hide-rightbar-expand")?.remove();
 

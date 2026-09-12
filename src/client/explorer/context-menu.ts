@@ -1,6 +1,6 @@
 /**
- * Context-menu / new / rename / delete bridges — explorer domain.
- * Registered via registerContextMenuBridges(deps); deps injected from panel.ts.
+ * Context-menu / new / rename / delete commands — explorer domain.
+ * Registered via registerContextMenuCommands(deps); deps injected from panel.ts.
  * @module dsh-solution-explorer/client/explorer/context-menu
  */
 
@@ -8,11 +8,11 @@ import { t } from "../locales.ts"
 
 import { showToast, showConfirm, showPrompt } from "../shared/ui.ts"
 
-import { editorStore, notifyEditorListeners } from "../state/editor-store.ts"
 
 import type { AppState } from "../state/store.ts"
 
 import { loadTree, refreshTreeSilent } from "./tree-render.ts"
+import { commands } from '../commands.ts'
 
 export interface ContextMenuDeps {
   state: AppState
@@ -20,10 +20,10 @@ export interface ContextMenuDeps {
   loadGitStatus?: (deps?: any) => Promise<void>
 }
 
-export function registerContextMenuBridges(deps: ContextMenuDeps): () => void {
+export function registerContextMenuCommands(deps: ContextMenuDeps): () => void {
   const { state, render } = deps
 
-  // Bridge to the host open-native route: open a workspace path with its
+  // Command for the host open-native route: open a workspace path with its
   // owning system program (reveal folder / default app / open-with picker /
   // properties dialog). Unsupported platform+action combos answer with a toast.
   const openNative = async (path: string, action: 'reveal' | 'open' | 'openas' | 'properties') => {
@@ -39,17 +39,17 @@ export function registerContextMenuBridges(deps: ContextMenuDeps): () => void {
       showToast(String((err && err.message) || err), true);
     }
   };
-  window.__solExpOpenNative = openNative;
+  commands.openNative = openNative;
 
   const hideContextMenu = () => {
-    if (state.contextMenuEl) {
-      state.contextMenuEl.remove();
-      state.contextMenuEl = null;
+    if (state.contextMenu) {
+      state.contextMenu = null;
+      render();
     }
   };
   document.addEventListener("click", hideContextMenu);
 
-  window.__solExpNew = async (type, dir) => {
+  commands.new = async (type, dir) => {
     if (!state.root) return;
     const zh = document.documentElement.lang?.startsWith("zh");
     const name = await showPrompt({
@@ -80,63 +80,52 @@ export function registerContextMenuBridges(deps: ContextMenuDeps): () => void {
     }
   };
 
-  window.__solExpPanelContextMenu = (evt) => {
+  commands.panelContextMenu = (evt) => {
     evt.preventDefault();
     const el = evt.target as HTMLElement;
     if (el && (el.closest(".sol-exp-header") || el.closest(".sol-exp-activity") || el.closest(".sol-exp-commit-box"))) return;
-    window.__solExpContextMenu("", evt.pageX, evt.pageY, false);
+    commands.contextMenu("", evt.pageX, evt.pageY, false);
   };
 
-  window.__solExpContextMenu = (target, x, y, isDir = false) => {
+  commands.contextMenu = (target, x, y, isDir = false) => {
     hideContextMenu();
     if (target && !state.tree.selectedPaths.has(target)) {
       state.tree.selectedPaths = new Set([target]);
       state.tree.selectionAnchor = target;
       state.tree.selectedPath = target;
     }
-    const menu = document.createElement("div");
-    menu.className = "sol-exp-context-menu";
-    menu.style.left = Math.min(x, window.innerWidth - 160) + "px";
-    menu.style.top = Math.min(y, window.innerHeight - 80) + "px";
-    menu.addEventListener("click", (e) => e.stopPropagation());
-    menu.addEventListener("contextmenu", (e) => e.preventDefault());
-
-    const addItem = (label, danger, onClick) => {
-      const item = document.createElement("div");
-      item.className = "sol-exp-context-menu-item" + (danger ? " danger" : "");
-      item.textContent = label;
-      item.addEventListener("click", () => {
-        hideContextMenu();
-        onClick();
-      });
-      menu.appendChild(item);
+    // The menu is React-rendered from state now: collect its entries here and
+    // let PanelRoot render <ContextMenu> through a portal.
+    const entries: import("../state/store.ts").ContextMenuEntry[] = [];
+    const addItem = (label: string, danger: boolean, onClick: () => void) => {
+      entries.push({ label, danger, onSelect: onClick });
     };
 
     const targets = target && state.tree.selectedPaths.has(target) ? [...state.tree.selectedPaths] : target ? [target] : [];
     const base = isDir ? target : target ? target.includes("/") ? target.slice(0, target.lastIndexOf("/")) : target.includes("\\") ? target.slice(0, target.lastIndexOf("\\")) : "" : "";
 
-    addItem("新建文件", false, () => window.__solExpNew("file", base));
-    addItem("新建文件夹", false, () => window.__solExpNew("dir", base));
+    addItem("新建文件", false, () => commands.new("file", base));
+    addItem("新建文件夹", false, () => commands.new("dir", base));
     // Intentional: reveal acts on the right-clicked folder only (single-object
     // semantic), even when a multi-selection containing it is active.
-    if (isDir && target) addItem(t("context.reveal"), false, () => window.__solExpOpenNative(target, "reveal"));
+    if (isDir && target) addItem(t("context.reveal"), false, () => commands.openNative(target, "reveal"));
 
     if (targets.length) {
       if (targets.length === 1) {
-        addItem("重命名", false, () => window.__solExpRename(targets[0]));
+        addItem("重命名", false, () => commands.rename(targets[0]));
         if (!isDir) {
-          addItem(t("context.open"), false, () => window.__solExpOpenNative(targets[0], "open"));
-          addItem(t("context.openWith"), false, () => window.__solExpOpenNative(targets[0], "openas"));
-          addItem(t("context.properties"), false, () => window.__solExpOpenNative(targets[0], "properties"));
+          addItem(t("context.open"), false, () => commands.openNative(targets[0], "open"));
+          addItem(t("context.openWith"), false, () => commands.openNative(targets[0], "openas"));
+          addItem(t("context.properties"), false, () => commands.openNative(targets[0], "properties"));
         }
       }
       addItem("复制", false, () => {
-        window.__solExpCopy();
+        commands.copy();
       });
       addItem("剪切", false, () => {
-        window.__solExpCut();
+        commands.cut();
       });
-      addItem("删除 (" + targets.length + ")", true, () => window.__solExpDeletePaths(targets));
+      addItem("删除 (" + targets.length + ")", true, () => commands.deletePaths(targets));
       addItem("复制相对路径", false, () => navigator.clipboard.writeText(targets.join("\n")));
       addItem("复制绝对路径", false, () => {
         const sep = state.root.endsWith("/") || state.root.endsWith("\\") ? "" : "/";
@@ -144,28 +133,28 @@ export function registerContextMenuBridges(deps: ContextMenuDeps): () => void {
       });
     }
 
-    if (state.clipboard.clipboard && state.clipboard.clipboard.paths.length) addItem("粘贴到此处" + (state.clipboard.clipboard.mode === "cut" ? "（剪切）" : ""), false, () => window.__solExpPaste(isDir ? target : target || ""));
+    if (state.clipboard.clipboard && state.clipboard.clipboard.paths.length) addItem("粘贴到此处" + (state.clipboard.clipboard.mode === "cut" ? "（剪切）" : ""), false, () => commands.paste(isDir ? target : target || ""));
 
-    if (menu.childNodes.length === 0) return;
+    if (entries.length === 0) return;
 
-    document.body.appendChild(menu);
-    state.contextMenuEl = menu;
+    state.contextMenu = { x, y, entries };
+    render();
   };
 
-  window.__solExpRename = (path) => {
+  commands.rename = (path) => {
     state.tree.renamingPath = path;
     render();
     const input = state.activeEl ? state.activeEl.querySelector<HTMLInputElement>("[data-sol-exp-rename]") : null;
     if (input) { input.focus(); input.select(); }
   };
 
-  window.__solExpRenameCancel = () => {
+  commands.renameCancel = () => {
     if (!state.tree.renamingPath) return;
     state.tree.renamingPath = "";
     render();
   };
 
-  window.__solExpRenameCommit = async (name) => {
+  commands.renameCommit = async (name) => {
     const path = state.tree.renamingPath;
     if (!path) return;
     state.tree.renamingPath = "";
@@ -192,7 +181,7 @@ export function registerContextMenuBridges(deps: ContextMenuDeps): () => void {
     }
   };
 
-  window.__solExpDeletePaths = async (paths) => {
+  commands.deletePaths = async (paths) => {
     if (!state.root || !paths.length) return;
     const zh = document.documentElement.lang?.startsWith("zh");
     if (!(await showConfirm({ title: zh ? "删除" : "Delete", message: zh ? "确定删除 " + paths.length + " 项？" : "Delete " + paths.length + " item(s)?", okText: zh ? "删除" : "Delete", danger: true }))) return;
@@ -216,19 +205,9 @@ export function registerContextMenuBridges(deps: ContextMenuDeps): () => void {
       console.warn("[sol-exp] delete error", p, err);
     }
     for (const p of paths) state.tree.selectedPaths.delete(p);
-    // If the editor is showing a deleted file, close it so the stale preview
-    // (an image especially) cannot linger.
-    if (editorStore.file && paths.includes(editorStore.file)) {
-      editorStore.file = null;
-      editorStore.content = null;
-      editorStore.loading = false;
-      editorStore.error = null;
-      editorStore.unsupported = false;
-      editorStore.image = false;
-      editorStore.saving = false;
-      editorStore.root = "";
-      notifyEditorListeners();
-    }
+    // Close the editor tabs of deleted files so a stale preview (an image
+    // especially) cannot linger.
+    for (const p of paths) commands.closePath?.(p);
     if (failed) showToast(failed + " 项删除失败", true);
     // Silent refresh: reconcile the tree in place and update SCM state — no
     // loading flash, no full-panel rebuild.
@@ -237,20 +216,20 @@ export function registerContextMenuBridges(deps: ContextMenuDeps): () => void {
     deps.loadGitStatus?.();
   };
 
-  window.__solExpDeleteFile = async (target) => {
-    if (target) await window.__solExpDeletePaths([target]);
+  commands.deleteFile = async (target) => {
+    if (target) await commands.deletePaths([target]);
   };
 
   return () => {
     document.removeEventListener("click", hideContextMenu);
-    delete window.__solExpNew;
-    delete window.__solExpOpenNative;
-    delete window.__solExpPanelContextMenu;
-    delete window.__solExpContextMenu;
-    delete window.__solExpRename;
-    delete window.__solExpRenameCancel;
-    delete window.__solExpRenameCommit;
-    delete window.__solExpDeletePaths;
-    delete window.__solExpDeleteFile;
+    delete commands.new;
+    delete commands.openNative;
+    delete commands.panelContextMenu;
+    delete commands.contextMenu;
+    delete commands.rename;
+    delete commands.renameCancel;
+    delete commands.renameCommit;
+    delete commands.deletePaths;
+    delete commands.deleteFile;
   };
 }

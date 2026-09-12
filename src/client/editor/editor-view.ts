@@ -8,13 +8,24 @@ import { setCaretAt } from "../shared/dom.ts"
 
 import { showToast } from "../shared/ui.ts"
 
-import { parseSideBySide } from "../state/diff-store.ts"
+import { parseSideBySide } from "./diff-parse.ts"
 
-import { editorStore } from "../state/editor-store.ts"
+import { EditorTabs } from "./EditorTabs.ts"
+import type { EditorTabView } from "./EditorTabs.ts"
+import { EditorInfoBar } from "./EditorInfoBar.ts"
+import { commands } from '../commands.ts'
 
-export function EditorView(props) {
+/**
+ * highlight.js emits HTML strings, so highlighted ranges must be injected as
+ * markup. This is the only deliberate string-render boundary in the client:
+ * every other view builds React elements. Call sites go through this helper so
+ * the exception stays greppable and auditable.
+ */
+function highlighted(html: string): { dangerouslySetInnerHTML: { __html: string } } {
+	return { dangerouslySetInnerHTML: { __html: html } };
+}
 
-			const { sessionId, inject } = props;
+function EditorBody({ zoom, setZoom }: { zoom: number; setZoom: (value: number | ((z: number) => number)) => void }) {
 
 			const [, forceUpdate] = useState(0);
 
@@ -23,10 +34,6 @@ export function EditorView(props) {
 			const textareaRef = useRef(null);
 
 			const gutterRef = useRef(null);
-
-			const [dirty, setDirty] = useState(false);
-
-			const [zoom, setZoom] = useState(1);
 
 			const zoomRef = useRef(1);
 
@@ -39,10 +46,6 @@ export function EditorView(props) {
 			const diffRightRowRefs = useRef<(HTMLElement | null)[]>([]);
 
 			const [diffRows, setDiffRows] = useState(null);
-
-			const [diffDirty, setDiffDirty] = useState(false);
-
-			const [diffSaving, setDiffSaving] = useState(false);
 
 			const rowIdRef = useRef(0);
 
@@ -86,7 +89,7 @@ export function EditorView(props) {
 
 			useEffect(() => {
 
-				const listeners = window.__solExpDiffListeners;
+				const listeners = commands.diffListeners;
 
 				if (listeners) {
 
@@ -104,7 +107,7 @@ export function EditorView(props) {
 
 			useEffect(() => {
 
-				const listeners = window.__solExpEditorListeners;
+				const listeners = commands.editorListeners;
 
 				if (listeners) {
 
@@ -123,7 +126,7 @@ export function EditorView(props) {
 			// Editor-mode hooks (zoom/pan for image preview) must run on every
 			// render even when the diff branch returns early — conditional hooks
 			// broke the view after switching between a file and a diff.
-			const edSt = window.__solExpGetEditorState?.();
+			const edSt = commands.getEditorState?.();
 
 			const edImage = edSt?.editorImage ?? false;
 
@@ -269,7 +272,7 @@ export function EditorView(props) {
 
 			useEffect(() => {
 
-				const st = window.__solExpGetEditorState?.();
+				const st = commands.getEditorState?.();
 
 				if (st && textareaRef.current && st.editorContent !== null && st.editorLoading === false) {
 
@@ -287,19 +290,22 @@ export function EditorView(props) {
 
 						textareaRef.current.value = st.editorContent;
 
-						setDirty(false);
-
 					}
 
 				}
 
 			});
 
-												const getDiffState = window.__solExpGetDiffState;
+												const getDiffState = commands.getDiffState;
 
 			const dstate = getDiffState ? getDiffState() : null;
 
 			if (dstate && dstate.diffPath) {
+
+				// Dirty/saving belong to the active diff tab, not to this component.
+				const diffDirty = dstate.diffDirty === true;
+
+				const diffSaving = dstate.diffSaving === true;
 
 				if (dstate.diffLoading) return h("div", { style: {
 
@@ -429,7 +435,7 @@ const oldRuns = diffLang ? (highlightLinesHtml(dstate.diffOldContent || "", diff
 
 setDiffRows({ path: dstate.diffPath, staged: dstate.diffStaged, rows: full, oldRuns });
 
-setDiffDirty(false);
+commands.setActiveDiffState?.({ dirty: false });
 
 				}
 
@@ -455,7 +461,7 @@ setDiffDirty(false);
 
 						if (!result.ok) showToast("暂存块失败: " + (result.error?.message || ""), true);
 
-						else window.__solExpRefreshSCM?.();
+						else commands.refreshSCM?.();
 
 					} catch (err) { showToast("暂存块失败: " + (err.message || String(err)), true); }
 
@@ -481,7 +487,7 @@ setDiffDirty(false);
 
 					});
 
-					setDiffDirty(true);
+					commands.setActiveDiffState?.({ dirty: true });
 
 				};
 
@@ -571,7 +577,7 @@ setDiffDirty(false);
 					});
 					focusDiffRowRef.current = i + 1;
 					focusDiffOffsetRef.current = 0;
-					setDiffDirty(true);
+					commands.setActiveDiffState?.({ dirty: true });
 				};
 				// Delete a non-collapsed (possibly multi-row) selection: collapse
 				// the affected rows into one so the row model stays in sync with
@@ -596,7 +602,7 @@ setDiffDirty(false);
 						nr.splice(a.idx + 1, b.idx - a.idx);
 						return { ...prev, rows: nr };
 					});
-					setDiffDirty(true);
+					commands.setActiveDiffState?.({ dirty: true });
 					focusDiffRowRef.current = a.idx;
 					focusDiffOffsetRef.current = a.offset;
 				};
@@ -622,7 +628,7 @@ setDiffDirty(false);
 								nr.splice(i, 1);
 								return { ...prev, rows: nr };
 							});
-							setDiffDirty(true);
+							commands.setActiveDiffState?.({ dirty: true });
 							focusDiffRowRef.current = i - 1;
 							focusDiffOffsetRef.current = (rows[i - 1].new || "").length;
 							return;
@@ -635,7 +641,7 @@ setDiffDirty(false);
 								nr.splice(i + 1, 1);
 								return { ...prev, rows: nr };
 							});
-							setDiffDirty(true);
+							commands.setActiveDiffState?.({ dirty: true });
 							focusDiffRowRef.current = i;
 							focusDiffOffsetRef.current = (rows[i].new || "").length;
 							return;
@@ -651,7 +657,7 @@ setDiffDirty(false);
 
 				const saveNew = async () => {
 
-					setDiffSaving(true);
+					commands.setActiveDiffState?.({ saving: true });
 
 					let content = "";
 
@@ -667,13 +673,10 @@ setDiffDirty(false);
 
 						if (el) {
 
-							const html = el.innerHTML.replace(/<br\s*\/?>/gi, "\n").replace(/<\/(div|p)>/gi, "\n");
-
-							const tmp = document.createElement("div");
-
-							tmp.innerHTML = html;
-
-							text = tmp.textContent ?? r.new;
+							// innerText carries the browser's block/line-break
+							// formatting, so the edited text needs no HTML
+							// string round-trip to be extracted.
+							text = (el as HTMLElement).innerText ?? r.new;
 
 						}
 
@@ -705,7 +708,7 @@ setDiffDirty(false);
 
 						if (!result.ok) showToast("保存失败: " + (result.error?.message || ""), true);
 
-						else window.__solExpRefreshSCM?.();
+						else commands.refreshSCM?.();
 
 					} catch (err) {
 
@@ -713,9 +716,9 @@ setDiffDirty(false);
 
 					}
 
-					setDiffSaving(false);
+					commands.setActiveDiffState?.({ saving: false });
 
-					setDiffDirty(false);
+					commands.setActiveDiffState?.({ dirty: false });
 
 				};
 
@@ -807,7 +810,7 @@ setDiffDirty(false);
 
 					color: r.oldDel ? "#f14c4c" : "var(--dsw-alias-label-primary)"
 
-				} }, h("span", { style: numStyle }, r.oldNum === null ? "" : String(r.oldNum)), r.old === "" ? h("span", null, NBSP) : (diffRows && diffRows.oldRuns && r.oldNum !== null ? h("span", { dangerouslySetInnerHTML: { __html: diffRows.oldRuns[r.oldNum - 1] ?? "" } }) : h("span", null, r.old))))), h("div", { style: { flex: "none", width: "28px", borderLeft: "1px solid var(--dsw-alias-border-l1)", borderRight: "1px solid var(--dsw-alias-border-l1)", display: "flex", flexDirection: "column", overflow: "hidden" } }, rows.map((r, i) => { const isStart = hunkStartRow.get(r.hunk) === i; let child = null; if (isStart) { child = h("div", { style: { display: "flex", gap: "1px" } }, h("button", { type: "button", title: "暂存块", onClick: () => stageHunk(hunks[r.hunk]), style: { border: "none", background: "transparent", cursor: "pointer", fontSize: "11px", color: "var(--dsw-alias-label-secondary)", padding: "0 2px", lineHeight: "14px" } }, "⤒"), h("button", { type: "button", title: "还原块", onClick: () => revertHunk(r.hunk), style: { border: "none", background: "transparent", cursor: "pointer", fontSize: "11px", color: "var(--dsw-alias-label-secondary)", padding: "0 2px", lineHeight: "14px" } }, "↩")); } else if (r.oldDel || r.newAdd) { child = h("span", { style: { width: "6px", height: "6px", borderRadius: "50%", display: "inline-block", background: r.oldDel ? "#f14c4c" : "#4ec9b0", opacity: 0.65 } }, null); } return h("div", { key: "g" + r.id, style: { height: "18px", lineHeight: "18px", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" } }, child); })), h("div", { className: "sol-exp-hl", style: {
+				} }, h("span", { style: numStyle }, r.oldNum === null ? "" : String(r.oldNum)), r.old === "" ? h("span", null, NBSP) : (diffRows && diffRows.oldRuns && r.oldNum !== null ? h("span", highlighted(diffRows.oldRuns[r.oldNum - 1] ?? "")) : h("span", null, r.old))))), h("div", { style: { flex: "none", width: "28px", borderLeft: "1px solid var(--dsw-alias-border-l1)", borderRight: "1px solid var(--dsw-alias-border-l1)", display: "flex", flexDirection: "column", overflow: "hidden" } }, rows.map((r, i) => { const isStart = hunkStartRow.get(r.hunk) === i; let child = null; if (isStart) { child = h("div", { style: { display: "flex", gap: "1px" } }, h("button", { type: "button", title: "暂存块", onClick: () => stageHunk(hunks[r.hunk]), style: { border: "none", background: "transparent", cursor: "pointer", fontSize: "11px", color: "var(--dsw-alias-label-secondary)", padding: "0 2px", lineHeight: "14px" } }, "⤒"), h("button", { type: "button", title: "还原块", onClick: () => revertHunk(r.hunk), style: { border: "none", background: "transparent", cursor: "pointer", fontSize: "11px", color: "var(--dsw-alias-label-secondary)", padding: "0 2px", lineHeight: "14px" } }, "↩")); } else if (r.oldDel || r.newAdd) { child = h("span", { style: { width: "6px", height: "6px", borderRadius: "50%", display: "inline-block", background: r.oldDel ? "#f14c4c" : "#4ec9b0", opacity: 0.65 } }, null); } return h("div", { key: "g" + r.id, style: { height: "18px", lineHeight: "18px", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" } }, child); })), h("div", { className: "sol-exp-hl", style: {
 
 					flex: "1 1 50%",
 
@@ -816,7 +819,7 @@ setDiffDirty(false);
 					overflowX: "auto",
 					outline: "none"
 
-				}, contentEditable: editable, suppressContentEditableWarning: true, spellCheck: false, onInput: () => setDiffDirty(true), onKeyDown: rightColKeyDown, onPaste: (e) => { e.preventDefault(); const t = e.clipboardData.getData("text/plain"); document.execCommand("insertText", false, t); } }, rows.map((r, i) => h("div", { key: "n" + r.id, "data-row-idx": String(i), style: {
+				}, contentEditable: editable, suppressContentEditableWarning: true, spellCheck: false, onInput: () => commands.setActiveDiffState?.({ dirty: true }), onKeyDown: rightColKeyDown, onPaste: (e) => { e.preventDefault(); const t = e.clipboardData.getData("text/plain"); document.execCommand("insertText", false, t); } }, rows.map((r, i) => h("div", { key: "n" + r.id, "data-row-idx": String(i), style: {
 
 					whiteSpace: "pre",
 
@@ -838,11 +841,11 @@ setDiffDirty(false);
 
 					ref: (el2) => { diffRightRowRefs.current[i] = el2; }
 
-				}, h("span", { dangerouslySetInnerHTML: { __html: rightHtml(i) } })))))));
+				}, h("span", highlighted(rightHtml(i)))))))));
 
 			}
 
-const getState = window.__solExpGetEditorState;
+const getState = commands.getEditorState;
 
 			const st = getState ? getState() : {
 
@@ -870,7 +873,6 @@ const getState = window.__solExpGetEditorState;
 
 			const error = st.editorError;
 
-			const saving = st.editorSaving;
 
 			const unsupported = st.editorUnsupported;
 
@@ -878,9 +880,8 @@ const getState = window.__solExpGetEditorState;
 
 			const editorRoot = st.editorRoot;
 
-			const statusText = saving ? t("editor.saving") : dirty ? t("editor.unsaved") : t("editor.saved");
 
-			const statusColor = saving ? "var(--dsw-alias-label-secondary)" : dirty ? "#e2b714" : "#4ec9b0";
+
 
 			const editorLang = langFromPath(file || "");
 
@@ -944,37 +945,7 @@ const getState = window.__solExpGetEditorState;
 
 				height: "100%"
 
-			} }, h("div", { style: {
-
-				display: "flex",
-
-				alignItems: "center",
-
-				justifyContent: "space-between",
-
-				padding: "6px 8px",
-
-				borderBottom: "1px solid var(--dsw-alias-border-l1)"
-
-			} }, h("span", { style: {
-
-				display: "flex",
-
-				alignItems: "center",
-
-				gap: "8px",
-
-				fontSize: "12px"
-
-			} }, h("span", { style: { color: "var(--dsw-alias-label-secondary)" } }, file)), h("span", { style: {
-
-				display: "flex",
-
-				alignItems: "center",
-
-				gap: "4px"
-
-			} }, h("button", { className: "sol-exp-editor-btn", onClick: () => setZoom((z) => Math.max(0.5, +(z * 0.8).toFixed(2))), title: "缩小" }, "−"), h("button", { className: "sol-exp-editor-btn", onClick: () => setZoom((z) => Math.min(10, +(z * 1.25).toFixed(2))), title: "放大" }, "+"), h("button", { className: "sol-exp-editor-btn", onClick: () => setZoom(1), title: "复位 100%" }, "1:1"), h("span", { style: { color: "var(--dsw-alias-label-tertiary)", fontSize: "11px", marginLeft: "4px" } }, Math.round(zoom * 100) + "%"), h("span", { style: { color: statusColor, fontSize: "11px", marginLeft: "8px" } }, statusText))), h("div", { ref: previewRef, style: {
+			} }, h("div", { ref: previewRef, style: {
 
 				flex: 1,
 
@@ -1048,45 +1019,24 @@ const getState = window.__solExpGetEditorState;
 
 			} }, h("div", { style: {
 
-				display: "flex",
-
-				alignItems: "center",
-
-				justifyContent: "space-between",
-
-				padding: "6px 8px",
-
-				borderBottom: "1px solid var(--dsw-alias-border-l1)"
-
-			} }, h("span", { style: {
-
-				display: "flex",
-
-				alignItems: "center",
-
-				gap: "8px",
-
-				fontSize: "12px"
-
-			} }, h("span", { style: { color: "var(--dsw-alias-label-secondary)" } }, file)), h("span", { style: {
-
-				color: statusColor,
-
-				fontSize: "11px"
-
-			} }, statusText)), h("div", { style: {
-
 				flex: 1,
 
 				minHeight: 0,
+
+				position: "relative",
+
+				overflow: "hidden",
 
 				display: "flex"
 
 }}, h("div", {
 ref: gutterRef,
 style: {
+position: "absolute",
+top: 0,
+left: 0,
+bottom: 0,
 width: "3em",
-flex: "none",
 overflow: "hidden",
 background: "var(--dsw-alias-bg-input)",
 borderRight: "1px solid var(--dsw-alias-border-l1)",
@@ -1102,6 +1052,7 @@ userSelect: "none"
 }, Array.from({ length: Math.max(1, (st.editorContent ?? "").split("\n").length) }, (_, i) => h("div", { key: i }, String(i + 1)))), h("div", { style: {
 flex: 1,
 minWidth: 0,
+marginLeft: "3em",
 position: "relative"
 } }, h("pre", {
 ref: hlPreRef,
@@ -1113,6 +1064,7 @@ left: 0,
 right: 0,
 bottom: 0,
 margin: 0,
+boxSizing: "border-box",
 padding: "8px 12px",
 fontFamily: "monospace",
 fontSize: "13px",
@@ -1124,7 +1076,7 @@ color: "var(--dsw-alias-label-primary)",
 background: "transparent",
 tabSize: 2
 },
-dangerouslySetInnerHTML: { __html: editorHtml }
+...highlighted(editorHtml)
 }), h("textarea", {
 ref: textareaRef,
 style: {
@@ -1135,6 +1087,7 @@ right: 0,
 bottom: 0,
 width: "100%",
 height: "100%",
+boxSizing: "border-box",
 padding: "8px 12px",
 border: "none",
 background: "transparent",
@@ -1151,8 +1104,7 @@ overflow: "auto"
 },
 defaultValue: st.editorContent ?? "",
 onInput: (e) => {
-editorStore.content = e.target.value;
-setDirty(true);
+commands.setActiveContent?.(e.target.value);
 },
 onScroll: (e) => {
 const stp = e.target.scrollTop;
@@ -1163,8 +1115,7 @@ if (hlPreRef.current) { hlPreRef.current.scrollTop = stp; hlPreRef.current.scrol
 onKeyDown: (e) => {
 if ((e.ctrlKey || e.metaKey) && e.key === "s") {
 e.preventDefault();
-window.__solExpSaveFile?.();
-setDirty(false);
+commands.saveFile?.();
 }
 },
 spellCheck: false
@@ -1183,6 +1134,87 @@ spellCheck: false
 				color: "var(--dsw-alias-label-tertiary)"
 
 			} }, h("span", null, t("editor.saveHint"))));
+
+		}
+
+/**
+ * The editor view registered into the host's view tabs: a tab strip over the
+ * active tab's body. The body itself is unchanged — it renders whichever tab
+ * the store has active.
+ */
+export function EditorView() {
+
+			const [, forceUpdate] = useState(0);
+
+			const rerender = useCallback(() => forceUpdate((n) => n + 1), []);
+
+			useEffect(() => {
+
+				const listeners = commands.editorListeners;
+
+				if (listeners) {
+
+					listeners.add(rerender);
+
+					return () => {
+
+						listeners.delete(rerender);
+
+					};
+
+				}
+
+			}, [rerender]);
+
+			const strip = commands.getEditorTabs?.() ?? { tabs: [] as EditorTabView[], activeId: null as string | null, activeStatus: null, activePath: null, activeKind: null };
+
+			// Image zoom lives here so the controls can sit in the info row while
+			// the preview itself stays in the body.
+			const [zoom, setZoom] = useState(1);
+
+
+			return h("div", { className: "sol-exp-editor", "data-conversation-composer-overlay": "" },
+
+				h("div", { className: "sol-exp-editor-top" },
+
+					h(EditorTabs, {
+
+						tabs: strip.tabs,
+
+						activeId: strip.activeId,
+
+						onActivate: (id: string) => { commands.activateTab?.(id) },
+
+						onClose: (id: string) => { void commands.closeTab?.(id) }
+
+					}),
+
+					strip.activePath && strip.activeKind
+						? h(EditorInfoBar, {
+
+							path: strip.activePath,
+
+							kind: strip.activeKind,
+
+							status: strip.activeStatus,
+
+							zoom: strip.activeKind === "image"
+								? {
+									percent: Math.round(zoom * 100),
+									onIn: () => setZoom((z) => Math.min(10, +(z * 1.25).toFixed(2))),
+									onOut: () => setZoom((z) => Math.max(0.5, +(z * 0.8).toFixed(2))),
+									onReset: () => setZoom(1),
+								}
+								: null,
+
+						})
+						: null,
+
+				),
+
+				h("div", { className: "sol-exp-editor-body" }, h(EditorBody, { zoom, setZoom })),
+
+			);
 
 		}
 

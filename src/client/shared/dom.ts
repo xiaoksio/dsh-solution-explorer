@@ -1,8 +1,4 @@
-/** Caret helpers for the contenteditable editor and diff rows. */
-
-export function escapeHtml(str: string): string {
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;").replace(/\\\\/g, "\\92;")
-}
+/** Relative-time formatting and caret helpers for the editor and diff rows. */
 
 export function relTime(ts: number): string {
   const diff = Date.now() - (ts || 0)
@@ -14,16 +10,6 @@ export function relTime(ts: number): string {
   const d = Math.floor(h / 24)
   if (d < 30) return d + " 天前"
   return new Date(ts).toLocaleDateString()
-}
-
-export function caretOffsetIn(el: HTMLElement): number {
-  const sel = window.getSelection()
-  if (!sel || sel.rangeCount === 0) return 0
-  const range = sel.getRangeAt(0)
-  const pre = document.createRange()
-  pre.selectNodeContents(el)
-  pre.setEnd(range.startContainer, range.startOffset)
-  return pre.toString().length
 }
 
 export function setCaretAt(el: HTMLElement, offset: number): void {

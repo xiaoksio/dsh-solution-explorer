@@ -65,18 +65,28 @@ export interface ScmState {
   tagsList: any[]
 }
 
+/** One commit row as the /git-log route returns it. */
+export interface CommitRow {
+  hash: string
+  shortHash: string
+  message: string
+  timestamp: number
+  unpushed?: boolean
+  parents?: string[]
+}
+
 export interface CommitState {
   commitsPage: number
   commitsAllLoaded: boolean
   commitsLoading: boolean
-  commitsHTML: string | null
+  /** Loaded commit rows, or null before the first page arrives (React-rendered). */
+  rows: CommitRow[] | null
   commitsSeq: number
-  graphLanes: any[]
-  graphPrevLanes: any[]
   graphDetailOpen: string
-  graphColorInUse: Set<any>
   commitDetailCache: Map<string, any>
   commitTipEl: HTMLElement | null
+  /** React root on the tooltip element (the card is React-rendered). */
+  commitTipRoot: any
   commitTipHash: string
   commitTipPending: string
   commitTipShowTimer: any
@@ -126,9 +136,25 @@ export interface TerminalState {
   termOutputFlush: any
 }
 
+/** One rendered context-menu entry; the React menu calls `onSelect` on click. */
+export interface ContextMenuEntry {
+  label: string
+  danger?: boolean
+  onSelect: () => void
+}
+
+/** The open context menu: viewport position plus its entries. */
+export interface ContextMenuState {
+  x: number
+  y: number
+  entries: ContextMenuEntry[]
+}
+
 export interface AppState {
   root: string
   currentTab: 'explorer' | 'search' | 'scm'
+  /** The open context menu, or null when closed (React-rendered). */
+  contextMenu: ContextMenuState | null
   activeEl: HTMLElement | null
   loadSeq: number
   contextMenuEl: HTMLElement | null
@@ -151,6 +177,7 @@ export function createInitialState(): AppState {
   return {
     root: '',
     currentTab: 'explorer',
+    contextMenu: null,
     activeEl: null,
     loadSeq: 0,
     contextMenuEl: null,
@@ -203,14 +230,12 @@ export function createInitialState(): AppState {
       commitsPage: 0,
       commitsAllLoaded: false,
       commitsLoading: false,
-      commitsHTML: null,
+      rows: null,
       commitsSeq: 0,
-      graphLanes: [],
-      graphPrevLanes: [],
       graphDetailOpen: '',
-      graphColorInUse: new Set(),
       commitDetailCache: new Map(),
       commitTipEl: null,
+      commitTipRoot: null,
       commitTipHash: '',
       commitTipPending: '',
       commitTipShowTimer: 0,

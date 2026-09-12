@@ -1,21 +1,7 @@
-/** Diff view state — module-level singleton shared by the open-diff bridge
- *  handlers and the EditorView diff column. Plain mutable object (no subscribe)
- *  so the existing explicit notify-diff-listeners call sites stay unchanged. */
-export const diffStore = {
-  path: null as string | null,
-  staged: false,
-  root: "",
-  content: null as string | null,
-  oldContent: "",
-  newContent: "",
-  loading: false,
-  unsupported: false,
-  listeners: new Set<() => void>(),
-}
-
-export function notifyDiffListeners(): void {
-  for (const fn of diffStore.listeners) diffStore.listeners.has(fn) && fn()
-}
+/**
+ * Diff text helpers — pure functions over a unified diff.
+ * @module dsh-solution-explorer/client/editor/diff-parse
+ */
 
 /** Convert a unified diff into old/new row pairs (with line numbers) for a side-by-side view. */
 export function parseSideBySide(content: string): Array<{ old: string; new: string; oldNum: number | null; newNum: number | null }> {

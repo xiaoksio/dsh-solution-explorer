@@ -1,6 +1,6 @@
 /**
- * Clipboard / drag-and-drop bridges — explorer domain.
- * Registered via registerClipboardBridges(deps); deps injected from panel.ts.
+ * Clipboard / drag-and-drop commands — explorer domain.
+ * Registered via registerClipboardCommands(deps); deps injected from panel.ts.
  * @module dsh-solution-explorer/client/explorer/clipboard
  */
 
@@ -9,6 +9,7 @@ import type { AppState } from "../state/store.ts"
 import { loadTree } from "./tree-render.ts"
 
 import { showToast } from "../shared/ui.ts"
+import { commands } from '../commands.ts'
 
 export interface ClipboardDeps {
   state: AppState
@@ -23,10 +24,10 @@ const bytesToBase64 = (bytes: Uint8Array): string => {
   return btoa(binary);
 };
 
-export function registerClipboardBridges(deps: ClipboardDeps): () => void {
+export function registerClipboardCommands(deps: ClipboardDeps): () => void {
   const { state, render } = deps
 
-  window.__solExpCopy = () => {
+  commands.copy = () => {
     if (state.tree.selectedPaths.size) {
       state.clipboard.clipboard = {
         paths: [...state.tree.selectedPaths],
@@ -36,7 +37,7 @@ export function registerClipboardBridges(deps: ClipboardDeps): () => void {
     }
   };
 
-  window.__solExpCut = () => {
+  commands.cut = () => {
     if (state.tree.selectedPaths.size) {
       state.clipboard.clipboard = {
         paths: [...state.tree.selectedPaths],
@@ -46,7 +47,7 @@ export function registerClipboardBridges(deps: ClipboardDeps): () => void {
     }
   };
 
-  window.__solExpPaste = async (target) => {
+  commands.paste = async (target) => {
     if (!state.clipboard.clipboard || !state.clipboard.clipboard.paths.length || !state.root) return;
     const { paths, mode } = state.clipboard.clipboard;
     state.clipboard.clipboard = null;
@@ -107,11 +108,11 @@ export function registerClipboardBridges(deps: ClipboardDeps): () => void {
     deps.loadGitStatus?.(deps);
   };
 
-  window.__solExpDragStart = (path) => {
+  commands.dragStart = (path) => {
     state.clipboard.dragPaths = state.tree.selectedPaths.has(path) ? [...state.tree.selectedPaths] : [path];
   };
 
-  window.__solExpDragOver = (path, evt) => {
+  commands.dragOver = (path, evt) => {
     const clear = () => document.querySelectorAll(".sol-exp-drop-target").forEach((el) => el.classList.remove("sol-exp-drop-target"));
     clear();
     if (state.clipboard.dragPaths.length && !state.clipboard.dragPaths.includes(path)) {
@@ -160,9 +161,9 @@ export function registerClipboardBridges(deps: ClipboardDeps): () => void {
     loadTree(deps);
     deps.loadGitStatus?.(deps);
   };
-  window.__solExpDropFiles = dropFiles;
+  commands.dropFiles = dropFiles;
 
-  window.__solExpDrop = async (path, evt) => {
+  commands.drop = async (path, evt) => {
     const files = evt.dataTransfer?.files;
     if (files && files.length > 0) {
       await dropFiles(path, files);
@@ -222,12 +223,12 @@ export function registerClipboardBridges(deps: ClipboardDeps): () => void {
   };
 
   return () => {
-    delete window.__solExpCopy;
-    delete window.__solExpCut;
-    delete window.__solExpPaste;
-    delete window.__solExpDragStart;
-    delete window.__solExpDragOver;
-    delete window.__solExpDrop;
-    delete window.__solExpDropFiles;
+    delete commands.copy;
+    delete commands.cut;
+    delete commands.paste;
+    delete commands.dragStart;
+    delete commands.dragOver;
+    delete commands.drop;
+    delete commands.dropFiles;
   };
 }

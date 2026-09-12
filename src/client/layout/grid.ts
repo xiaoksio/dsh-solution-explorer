@@ -4,6 +4,7 @@
  */
 
 import type { AppState } from "../state/store.ts"
+import { commands } from '../commands.ts'
 
 /** Panel width bounds and collapsed rail width (mirrors panel.ts constants). */
 const PANEL_MIN = 264;
@@ -264,10 +265,10 @@ state.layout.styleObs = new MutationObserver(syncGrid);
 
 				}
 
-/** Register the layout bridges (window.__solExp*). Returns a disposer. */
-export function registerGridBridges({ state }: GridDeps): () => void {
+/** Register the layout commands. Returns a disposer. */
+export function registerGridCommands({ state }: GridDeps): () => void {
 
-  window.__solExpScmDividerDown = (e) => {
+  commands.scmDividerDown = (e) => {
     e.preventDefault();
     // Freeze auto-refresh for the duration of the drag so a poll
     // cannot rebuild the SCM region under the pointer.
@@ -319,6 +320,6 @@ export function registerGridBridges({ state }: GridDeps): () => void {
   };
 
   return () => {
-    delete window.__solExpScmDividerDown;
+    delete commands.scmDividerDown;
   };
 }

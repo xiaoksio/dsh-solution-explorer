@@ -23,23 +23,23 @@ export const STYLES = `
 
 .sol-exp-content { flex:1; overflow-y:auto; overflow-x:hidden; }
 
-.sol-exp-loading, .sol-exp-empty, .sol-exp-error { padding:16px; text-align:center; color:var(--dsw-alias-label-tertiary,#6e6e6e); font-size:13px; }
+.sol-exp-loading, .sol-exp-empty, .sol-exp-error { padding:16px; text-align:center; color:var(--dsw-alias-label-tertiary); font-size:13px; }
 
 .sol-exp-error { color:var(--dsw-color-error,#f48771); }
 
 .sol-exp-tree { padding:2px 0; }
 
-.sol-exp-tree-node { display:flex; align-items:center; gap:2px; padding:2px 8px 2px 4px; cursor:pointer; white-space:nowrap; height:24px; line-height:24px; color:var(--dsw-alias-label-primary); }
+.sol-exp-tree-node { display:flex; align-items:center; gap:6px; min-width:0; padding:5px 10px; box-sizing:border-box; cursor:pointer; white-space:nowrap; border-radius:10px; color:var(--dsw-alias-label-primary); }
 
-.sol-exp-tree-node:hover { background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.06)); }
+.sol-exp-tree-node:hover { background:var(--dsw-alias-interactive-bg-hover); }
 
-.sol-exp-tree-node.sol-exp-selected { background:var(--dsw-alias-interactive-bg-active,rgba(0,120,212,0.2)); }
+.sol-exp-tree-node.sol-exp-selected { background:var(--dsw-alias-interactive-bg-active); }
 
 .sol-exp-cut { opacity:.5; }
 
-.sol-exp-drop-target { outline:1px solid var(--dsw-alias-state-business-primary,#0078d4); outline-offset:-1px; background:var(--dsw-alias-interactive-bg-active,rgba(0,120,212,0.2)); }
+.sol-exp-drop-target { outline:1px solid var(--dsw-alias-state-business-primary); outline-offset:-1px; background:var(--dsw-alias-interactive-bg-active); }
 
-.sol-exp-chevron { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; flex-shrink:0; color:var(--dsw-alias-label-tertiary,#6e6e6e); }
+.sol-exp-chevron { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; flex-shrink:0; color:var(--dsw-alias-label-tertiary); }
 
 .sol-exp-file-icon { margin-right:4px; flex-shrink:0; display:inline-flex; align-items:center; line-height:1; }
 
@@ -51,15 +51,15 @@ export const STYLES = `
 
 .sol-exp-scm-section { }
 
-.sol-exp-scm-section-header { display:flex; align-items:center; gap:4px; padding:8px 12px; cursor:pointer; font-size:12px; font-weight:600; color:var(--dsw-alias-label-secondary,#969696); }
+.sol-exp-scm-section-header { display:flex; align-items:center; gap:4px; padding:8px 12px; cursor:pointer; font-size:12px; font-weight:600; color:var(--dsw-alias-label-secondary); }
 
-.sol-exp-scm-section-header:hover { color:var(--dsw-alias-label-primary,#d4d4d4); }
+.sol-exp-scm-section-header:hover { color:var(--dsw-alias-label-primary); }
 
-.sol-exp-scm-section-count { font-size:11px; font-weight:400; color:var(--dsw-alias-label-tertiary,#6e6e6e); }
+.sol-exp-scm-section-count { font-size:11px; font-weight:400; color:var(--dsw-alias-label-tertiary); }
 
-.sol-exp-scm-item { display:flex; align-items:center; gap:6px; padding:3px 12px 3px 24px; cursor:pointer; font-size:13px; line-height:22px; }
+.sol-exp-scm-item { display:flex; align-items:center; gap:6px; min-width:0; padding:5px 10px 5px 24px; box-sizing:border-box; cursor:pointer; font-size:13px; line-height:20px; border-radius:10px; }
 
-.sol-exp-scm-item:hover { background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.06)); }
+.sol-exp-scm-item:hover { background:var(--dsw-alias-interactive-bg-hover); }
 
 .sol-exp-scm-status { font-size:11px; font-weight:700; width:16px; text-align:center; flex-shrink:0; }
 
@@ -69,53 +69,53 @@ export const STYLES = `
 
 .sol-exp-scm-item:hover .sol-exp-scm-actions { display:flex; }
 
-.sol-exp-scm-action-btn { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border:none; background:transparent; color:var(--dsw-alias-label-tertiary,#6e6e6e); cursor:pointer; border-radius:3px; padding:0; font-size:11px; }
+.sol-exp-scm-action-btn { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border:none; background:transparent; color:var(--dsw-alias-label-tertiary); cursor:pointer; border-radius:3px; padding:0; font-size:11px; }
 
-.sol-exp-scm-action-btn:hover { background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.1)); color:var(--dsw-alias-label-primary,#d4d4d4); }
+.sol-exp-scm-action-btn:hover { background:var(--dsw-alias-interactive-bg-hover); color:var(--dsw-alias-label-primary); }
 
-.sol-exp-diff { margin:0 12px 6px 40px; border-left:2px solid var(--dsw-alias-border-l2,#333); background:var(--dsw-alias-bg-input,rgba(0,0,0,0.2)); border-radius:6px; overflow:hidden; }
+.sol-exp-diff { margin:0 12px 6px 40px; border-left:2px solid var(--dsw-alias-border-l2); background:var(--dsw-alias-bg-input); border-radius:6px; overflow:hidden; }
 
-.sol-exp-diff-line { padding:0 8px; font-family:'Cascadia Code','Fira Code','Consolas',monospace; font-size:12px; line-height:18px; white-space:pre; color:var(--dsw-alias-label-secondary,#969696); }
+.sol-exp-diff-line { padding:0 8px; font-family:'Cascadia Code','Fira Code','Consolas',monospace; font-size:12px; line-height:18px; white-space:pre; color:var(--dsw-alias-label-secondary); }
 
 .sol-exp-diff-line.add { background:rgba(78,201,176,0.12); color:#4ec9b0; }
 
 .sol-exp-diff-line.del { background:rgba(241,76,76,0.12); color:#f14c4c; }
 
-.sol-exp-diff-line.hunk { background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.06)); color:var(--dsw-alias-label-primary,#d4d4d4); }
+.sol-exp-diff-line.hunk { background:var(--dsw-alias-interactive-bg-hover); color:var(--dsw-alias-label-primary); }
 
-.sol-exp-diff-line.meta { color:var(--dsw-alias-label-tertiary,#6e6e6e); }
+.sol-exp-diff-line.meta { color:var(--dsw-alias-label-tertiary); }
 
-.sol-exp-diff-empty { padding:8px; color:var(--dsw-alias-label-tertiary,#6e6e6e); font-size:12px; }
+.sol-exp-diff-empty { padding:8px; color:var(--dsw-alias-label-tertiary); font-size:12px; }
 
 .sol-exp-scm-header-actions { display:flex; align-items:center; gap:2px; margin-left:auto; }
 
-.sol-exp-hdr-btn { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border:none; border-radius:6px; background:transparent; color:var(--dsw-alias-label-tertiary,#6e6e6e); cursor:pointer; padding:0; }
+.sol-exp-hdr-btn { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border:none; border-radius:6px; background:transparent; color:var(--dsw-alias-label-tertiary); cursor:pointer; padding:0; }
 
-.sol-exp-hdr-btn:hover { background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.1)); color:var(--dsw-alias-label-primary,#d4d4d4); }
+.sol-exp-hdr-btn:hover { background:var(--dsw-alias-interactive-bg-hover); color:var(--dsw-alias-label-primary); }
 
-.sol-exp-hdr-btn.danger { color:var(--dsw-alias-state-error-primary,#f14c4c); }
+.sol-exp-hdr-btn.danger { color:var(--dsw-alias-state-error-primary); }
 
-.sol-exp-hdr-btn.danger:hover { background:var(--dsw-alias-state-error-primary,#f14c4c); color:#fff; }
+.sol-exp-hdr-btn.danger:hover { background:var(--dsw-alias-state-error-primary); color:#fff; }
 
-.sol-exp-commit-box { padding:8px 12px; border-bottom:1px solid var(--dsw-alias-border-l1,#333); }
+.sol-exp-commit-box { padding:8px 12px; border-bottom:1px solid var(--dsw-alias-border-l1); }
 
-.sol-exp-commit-input { width:100%; box-sizing:border-box; padding:6px 10px; border:none; border-radius:8px; background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.06)); color:var(--dsw-alias-label-primary,#d4d4d4); font-size:13px; line-height:18px; outline:none; resize:none; font-family:inherit; min-height:60px; transition:background-color 120ms ease; }
+.sol-exp-commit-input { width:100%; box-sizing:border-box; padding:6px 10px; border:none; border-radius:8px; background:var(--dsw-alias-interactive-bg-hover); color:var(--dsw-alias-label-primary); font-size:13px; line-height:18px; outline:none; resize:none; font-family:inherit; min-height:60px; transition:background-color 120ms ease; }
 
-.sol-exp-commit-input:focus { background:var(--dsw-alias-interactive-bg-hover-solid,var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.08))); }
+.sol-exp-commit-input:focus { background:var(--dsw-alias-interactive-bg-hover-solid,var(--dsw-alias-interactive-bg-hover)); }
 
-.sol-exp-commit-input::placeholder { color:var(--dsw-alias-label-tertiary,#6e6e6e); }
+.sol-exp-commit-input::placeholder { color:var(--dsw-alias-label-tertiary); }
 
 .sol-exp-commit-row { display:flex; gap:6px; margin-top:6px; }
 
-.sol-exp-commit-btn { flex:1; width:100%; padding:5px 0; border:none; border-radius:6px; background:var(--dsw-alias-button-info-fill,#3964fe); color:#fff; font-size:13px; font-weight:500; cursor:pointer; line-height:20px; transition:background-color 120ms ease; }
+.sol-exp-commit-btn { flex:1; width:100%; padding:5px 0; border:none; border-radius:6px; background:var(--dsw-alias-button-info-fill); color:#fff; font-size:13px; font-weight:500; cursor:pointer; line-height:20px; transition:background-color 120ms ease; }
 
-.sol-exp-commit-btn:hover:not(:disabled) { background:var(--dsw-alias-button-info-hover,#679efe); }
+.sol-exp-commit-btn:hover:not(:disabled) { background:var(--dsw-alias-button-info-hover); }
 
 .sol-exp-commit-btn:disabled { opacity:.4; cursor:default; }
 
-.sol-exp-ai-btn { flex:none; width:30px; padding:0; border:none; border-radius:6px; background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.08)); color:var(--dsw-alias-label-primary,#d4d4d4); font-size:13px; line-height:30px; cursor:pointer; transition:background-color 120ms ease; }
+.sol-exp-ai-btn { flex:none; width:30px; padding:0; border:none; border-radius:6px; background:var(--dsw-alias-interactive-bg-hover); color:var(--dsw-alias-label-primary); font-size:13px; line-height:30px; cursor:pointer; transition:background-color 120ms ease; }
 
-.sol-exp-ai-btn:hover:not(:disabled) { background:var(--dsw-alias-interactive-bg-active,rgba(0,120,212,0.2)); }
+.sol-exp-ai-btn:hover:not(:disabled) { background:var(--dsw-alias-interactive-bg-active); }
 
 .sol-exp-ai-btn:disabled { opacity:.4; cursor:default; }
 
@@ -123,21 +123,21 @@ export const STYLES = `
 
 @keyframes sol-exp-ai-spin { to { transform: rotate(360deg); } }
 
-.sol-exp-commit-branch { font-size:11px; color:var(--dsw-alias-label-tertiary,#6e6e6e); }
+.sol-exp-commit-branch { font-size:11px; color:var(--dsw-alias-label-tertiary); }
 
 .sol-exp-search-results { padding:4px 0; }
 
-.sol-exp-search-item { display:flex; align-items:center; gap:4px; padding:4px 12px; cursor:pointer; font-size:13px; line-height:20px; }
+.sol-exp-search-item { display:flex; align-items:center; gap:6px; min-width:0; padding:5px 10px; box-sizing:border-box; cursor:pointer; font-size:13px; line-height:20px; border-radius:10px; }
 
-.sol-exp-search-item:hover { background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.06)); }
+.sol-exp-search-item:hover { background:var(--dsw-alias-interactive-bg-hover); }
 
-.sol-exp-search-item.sol-exp-selected { background:var(--dsw-alias-interactive-bg-active,rgba(0,120,212,0.2)); }
+.sol-exp-search-item.sol-exp-selected { background:var(--dsw-alias-interactive-bg-active); }
 
 .sol-exp-icon { flex-shrink:0; font-size:14px; }
 
 .sol-exp-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex-shrink:0; max-width:40%; }
 
-.sol-exp-path { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--dsw-alias-label-tertiary,#6e6e6e); font-size:11px; flex:1; min-width:0; margin-left:4px; }
+.sol-exp-path { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--dsw-alias-label-tertiary); font-size:11px; flex:1; min-width:0; margin-left:4px; }
 
 .sol-exp-path::before { content:'\\2014 '; }
 
@@ -147,7 +147,7 @@ export const STYLES = `
 
 .sol-exp-content::-webkit-scrollbar-track, .sol-exp-scm-top::-webkit-scrollbar-track, #sol-exp-commits-list::-webkit-scrollbar-track, .sol-exp-commit-files::-webkit-scrollbar-track { background:transparent; }
 
-.sol-exp-content::-webkit-scrollbar-thumb, .sol-exp-scm-top::-webkit-scrollbar-thumb, #sol-exp-commits-list::-webkit-scrollbar-thumb, .sol-exp-commit-files::-webkit-scrollbar-thumb { background:var(--dsw-alias-scrollbar-bg-l2,rgba(255,255,255,0.1)); border-radius:3px; }
+.sol-exp-content::-webkit-scrollbar-thumb, .sol-exp-scm-top::-webkit-scrollbar-thumb, #sol-exp-commits-list::-webkit-scrollbar-thumb, .sol-exp-commit-files::-webkit-scrollbar-thumb { background:var(--dsw-alias-scrollbar-bg-l2); border-radius:3px; }
 
 .sol-exp-body { flex:1; min-height:0; display:flex; }
 
@@ -155,49 +155,66 @@ export const STYLES = `
 
 .sol-exp-activity-btn { position:relative; flex:none; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border:none; background:transparent; color:var(--dsw-alias-label-tertiary); cursor:pointer; border-radius:6px; padding:0; margin:auto 0; }
 
-.sol-exp-activity-btn:hover { color:var(--dsw-alias-label-primary,#d4d4d4); background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.06)); }
+.sol-exp-activity-btn:hover { color:var(--dsw-alias-label-primary); background:var(--dsw-alias-interactive-bg-hover); }
 
-.sol-exp-activity-btn.active { color:var(--dsw-alias-label-primary,#d4d4d4); background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.06)); }
+.sol-exp-activity-btn.active { color:var(--dsw-alias-label-primary); background:var(--dsw-alias-interactive-bg-hover); }
 
-.sol-exp-panel-rail { flex:1; min-height:0; display:flex; flex-direction:column; align-items:center; padding:18px 10px 6px; box-sizing:border-box; background:var(--dsw-specific-sidebar-fill); }
+.sol-exp-panel-rail { flex:1; min-height:0; display:flex; flex-direction:column; align-items:center; gap:6px; padding:18px 10px 6px; box-sizing:border-box; background:var(--dsw-specific-sidebar-fill); }
 /* All rail controls (expand toggle + feature icons) sit centered on the same
    vertical axis so the folded rail reads as one symmetric column. */
-.sol-exp-rail-btn { flex:none; align-self:center; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border:none; border-radius:6px; background:transparent; color:var(--dsw-alias-label-tertiary); cursor:pointer; padding:0; margin-bottom:8px; }
-.sol-exp-rail-btn:hover { color:var(--dsw-alias-label-primary,#d4d4d4); background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.06)); }
+.sol-exp-rail-btn { flex:none; align-self:center; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border:none; border-radius:6px; background:transparent; color:var(--dsw-alias-label-tertiary); cursor:pointer; padding:0; }
+.sol-exp-rail-btn:hover { color:var(--dsw-alias-label-primary); background:var(--dsw-alias-interactive-bg-hover); }
+/* The shell mirrors its panel glyph for the right sidebar (scaleX(-1) on its
+   own 打开/收起右侧边栏 buttons); ours is a right column too, so mirror both
+   toggles instead of showing a left-panel arrow. */
+.sol-exp-rail-btn svg, .sol-exp-panel-toggle svg { transform: scaleX(-1); }
 .sol-exp-rail-icon { position:relative; flex:none; align-self:center; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border:none; border-radius:6px; background:transparent; color:var(--dsw-alias-label-tertiary); cursor:pointer; padding:0; }
-.sol-exp-rail-icon:hover { color:var(--dsw-alias-label-primary,#d4d4d4); background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.06)); }
+.sol-exp-rail-icon:hover { color:var(--dsw-alias-label-primary); background:var(--dsw-alias-interactive-bg-hover); }
 /* Change-count badge: tucked into the icon's bottom-right corner and
    overlapping it (VS Code style), so icon+badge read as one unit instead
    of a floating pill. Absolute positioning keeps it out of the icon's flex
    row, so counts of any width can't squeeze the icon. */
-.sol-exp-activity-badge { position:absolute; bottom:2px; right:2px; min-width:13px; height:13px; padding:0 3px; border-radius:7px; box-sizing:border-box; background:var(--dsw-alias-button-info-fill,#3964fe); color:#fff; font-size:8px; font-weight:600; line-height:13px; text-align:center; white-space:nowrap; z-index:1; pointer-events:none; }
+.sol-exp-activity-badge { position:absolute; bottom:2px; right:2px; min-width:13px; height:13px; padding:0 3px; border-radius:7px; box-sizing:border-box; background:var(--dsw-alias-button-info-fill); color:#fff; font-size:8px; font-weight:600; line-height:13px; text-align:center; white-space:nowrap; z-index:1; pointer-events:none; }
 
 /* Bottom-terminal toggle inside the folded rail, under the SCM icon, using
    the same terminal glyph as the activity bar (stroke family, 1.5). */
-.sol-exp-rail-icon.sol-exp-terminal-toggle.active { color:var(--dsw-alias-label-primary,#d4d4d4); background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.06)); }
+.sol-exp-rail-icon.sol-exp-terminal-toggle.active { color:var(--dsw-alias-label-primary); background:var(--dsw-alias-interactive-bg-hover); }
+
+
+/* The editor scrolls inside its textarea; give it the same thin themed bar as
+   the rest of the panel instead of the browser default. */
+.sol-exp-editor textarea { scrollbar-width:thin; }
+
+.sol-exp-editor textarea::-webkit-scrollbar { width:8px; height:8px; }
+
+.sol-exp-editor textarea::-webkit-scrollbar-track { background:transparent; }
+
+.sol-exp-editor textarea::-webkit-scrollbar-thumb { background:var(--dsw-alias-scrollbar-bg-l2); border-radius:4px; }
+
+.sol-exp-editor textarea::-webkit-scrollbar-thumb:hover { background:var(--dsw-alias-scrollbar-hover-l2); }
 
 /* Bottom multi-tab terminal panel (ConPTY embedded). */
 .sol-exp-terminal-shell { position:relative; flex:none; display:flex; flex-direction:column; min-height:0; overflow:hidden; background:var(--dsw-specific-sidebar-fill,var(--dsw-alias-bg-layer-2,#171717)); border-top:1px solid var(--dsw-alias-border-l2); }
 .sol-exp-term-resize { position:absolute; top:-3px; left:0; right:0; height:6px; cursor:ns-resize; touch-action:none; z-index:2; }
-.sol-exp-term-resize::after { content:''; position:absolute; left:0; right:0; top:50%; height:1px; background:var(--dsw-alias-button-floating-fill,#0078d4); opacity:0; transition:opacity .12s ease; }
+.sol-exp-term-resize::after { content:''; position:absolute; left:0; right:0; top:50%; height:1px; background:var(--dsw-alias-button-floating-fill); opacity:0; transition:opacity .12s ease; }
 .sol-exp-term-resize:hover::after { opacity:.8; }
 .sol-exp-term-tabs { flex:none; display:flex; align-items:center; gap:2px; height:34px; padding:0 8px; border-bottom:1px solid var(--dsw-alias-border-l1); overflow-x:auto; scrollbar-width:thin; }
 .sol-exp-term-tab { flex:1 0 auto; display:flex; align-items:center; gap:6px; height:26px; padding:0 8px; max-width:260px; border-radius:6px; border:none; background:transparent; color:var(--dsw-alias-label-secondary); font-size:12px; cursor:pointer; }
-.sol-exp-term-tab:hover { background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.06)); }
-.sol-exp-term-tab.active { color:var(--dsw-alias-label-primary,#d4d4d4); background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.06)); }
+.sol-exp-term-tab:hover { background:var(--dsw-alias-interactive-bg-hover); }
+.sol-exp-term-tab.active { color:var(--dsw-alias-label-primary); background:var(--dsw-alias-interactive-bg-hover); }
 .sol-exp-term-tab-close { flex:none; width:16px; height:16px; display:flex; align-items:center; justify-content:center; border:none; background:transparent; color:var(--dsw-alias-label-tertiary); cursor:pointer; border-radius:4px; font-size:11px; line-height:1; }
-.sol-exp-term-tab-close:hover { color:var(--dsw-alias-label-primary,#d4d4d4); background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.06)); }
+.sol-exp-term-tab-close:hover { color:var(--dsw-alias-label-primary); background:var(--dsw-alias-interactive-bg-hover); }
 .sol-exp-term-add { flex:none; width:26px; height:26px; margin-left:4px; display:flex; align-items:center; justify-content:center; border:none; background:transparent; color:var(--dsw-alias-label-secondary); cursor:pointer; border-radius:6px; font-size:14px; }
-.sol-exp-term-add:hover:not(:disabled) { color:var(--dsw-alias-label-primary,#d4d4d4); background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.06)); }
+.sol-exp-term-add:hover:not(:disabled) { color:var(--dsw-alias-label-primary); background:var(--dsw-alias-interactive-bg-hover); }
 .sol-exp-term-add:disabled { opacity:.4; cursor:default; }
 .sol-exp-term-body { flex:1; min-height:0; position:relative; background:var(--dsw-alias-bg-layer-1,#101010); }
 .sol-exp-term-pane { position:absolute; inset:0; visibility:hidden; }
 .sol-exp-term-pane.active { visibility:visible; }
 .sol-exp-term-pane .xterm { height:100%; }
-.sol-exp-term-exited { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--dsw-alias-label-tertiary,#6e6e6e); font-size:13px; gap:10px; }
+.sol-exp-term-exited { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--dsw-alias-label-tertiary); font-size:13px; gap:10px; }
 
 .sol-exp-resize-handle { position:absolute; top:0; bottom:0; width:8px; margin-left:-4px; cursor:col-resize; z-index:2; touch-action:none; background:transparent; }
-.sol-exp-resize-handle::after { content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:3px; height:44px; border-radius:2px; background:var(--dsw-alias-button-floating-fill,#0078d4); opacity:0; transition:opacity .12s ease; }
+.sol-exp-resize-handle::after { content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:3px; height:44px; border-radius:2px; background:var(--dsw-alias-button-floating-fill); opacity:0; transition:opacity .12s ease; }
 .sol-exp-resize-handle:hover::after, .sol-exp-resize-handle[data-dragging='true']::after { opacity:1; }
 .sol-exp-resize-handle[data-overlapped='true'] { pointer-events:none; }
 
@@ -205,7 +222,7 @@ export const STYLES = `
 
 .sol-exp-git-letter { flex:none; font-size:11px; font-weight:700; width:16px; text-align:center; margin-left:6px; }
 
-.sol-exp-context-menu { position:absolute; z-index:1000; min-width:140px; padding:4px; background:var(--dsw-alias-bg-overlay,var(--dsw-alias-bg-layer-3,#1e1e1e)); border:1px solid var(--dsw-alias-border-l2); border-radius:8px; box-shadow:0 4px 16px rgba(0,0,0,0.3); font-size:13px; color:var(--dsw-alias-label-primary); }
+.sol-exp-context-menu { position:absolute; z-index:1000; min-width:140px; padding:4px; background:var(--dsw-alias-bg-overlay,var(--dsw-alias-bg-layer-3)); border:1px solid var(--dsw-alias-border-l2); border-radius:8px; box-shadow:0 4px 16px rgba(0,0,0,0.3); font-size:13px; color:var(--dsw-alias-label-primary); }
 .sol-exp-modal-mask { position:fixed; inset:0; z-index:100000; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); backdrop-filter:blur(2px); animation:solExpModalFade .15s ease; }
 .sol-exp-modal-box { width:min(420px, calc(100vw - 48px)); background:var(--dsw-alias-bg-overlay); border:1px solid var(--dsw-alias-border-l2); border-radius:10px; box-shadow:0 12px 40px rgba(0,0,0,0.35); overflow:hidden; animation:solExpModalPop .16s ease; }
 .sol-exp-modal-title { padding:16px 16px 0; font-size:15px; font-weight:600; color:var(--dsw-alias-label-primary); }
@@ -230,11 +247,59 @@ export const STYLES = `
 
 .sol-exp-context-menu-item.danger:hover { background:var(--dsw-alias-interactive-bg-hover); }
 
-.sol-exp-editor { flex:1; display:flex; flex-direction:column; min-height:0; }
+.sol-exp-editor { flex:1; height:100%; box-sizing:border-box; display:flex; flex-direction:column; min-height:0; overflow:hidden; }
 
-.sol-exp-editor-header { display:flex; align-items:center; justify-content:space-between; gap:4px; padding:6px 8px; border-bottom:1px solid var(--dsw-alias-border-l1,#333); flex-shrink:0; }
+.sol-exp-editor-body { flex:1; min-height:0; box-sizing:border-box; display:flex; flex-direction:column; padding-bottom:calc(var(--dsh-composer-height, 152px) + 16px); }
 
-.sol-exp-editor-path { font-size:12px; color:var(--dsw-alias-label-secondary,#969696); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.sol-exp-editor-top { flex:none; display:flex; flex-direction:column; background:var(--dsw-specific-sidebar-fill); }
+
+.sol-exp-etabs { flex:none; display:flex; align-items:stretch; gap:2px; padding:0 4px; height:32px; box-sizing:border-box; border-bottom:1px solid var(--dsw-alias-border-l1); background:var(--dsw-specific-sidebar-fill); overflow-x:auto; overflow-y:hidden; }
+
+.sol-exp-etab { display:flex; align-items:center; gap:6px; flex:none; max-width:200px; padding:0 6px 0 8px; margin:4px 0; border-radius:6px; cursor:pointer; color:var(--dsw-alias-label-tertiary); font-size:12px; white-space:nowrap; }
+
+.sol-exp-etab:hover { background:var(--dsw-alias-interactive-bg-hover); color:var(--dsw-alias-label-primary); }
+
+.sol-exp-etab.active { background:var(--dsw-alias-bg-layer-3,var(--dsw-alias-interactive-bg-hover)); color:var(--dsw-alias-label-primary); }
+
+.sol-exp-etab-icon { display:inline-flex; align-items:center; flex:none; }
+
+.sol-exp-etab-name { overflow:hidden; text-overflow:ellipsis; }
+
+.sol-exp-etab-dot { flex:none; font-size:9px; line-height:1; color:var(--dsw-alias-label-primary); }
+
+.sol-exp-etab-close { display:inline-flex; align-items:center; justify-content:center; flex:none; width:16px; height:16px; padding:0; border:none; border-radius:3px; background:transparent; color:inherit; cursor:pointer; opacity:.6; }
+
+.sol-exp-etab-close:hover { opacity:1; background:var(--dsw-alias-bg-modifier); }
+
+.sol-exp-einfo-status { flex:none; padding:0 8px; font-size:11px; white-space:nowrap; color:var(--dsw-alias-label-tertiary); }
+/* Both chrome rows pin to the top of the host's scroll container: the editor
+   body grows with its content (the host's view area has no definite height), so
+   the whole view scrolls underneath and the rows must stay put. */
+.sol-exp-einfo { flex:none; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:3px 10px; border-bottom:1px solid var(--dsw-alias-border-l1); background:var(--dsw-specific-sidebar-fill); font-size:11px; line-height:18px; }
+
+.sol-exp-einfo-path { min-width:0; color:var(--dsw-alias-label-secondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+.sol-exp-einfo-kind { flex:none; color:var(--dsw-alias-label-tertiary); white-space:nowrap; }
+
+.sol-exp-einfo-right { margin-left:auto; flex:none; display:flex; align-items:center; gap:6px; }
+
+.sol-exp-einfo-zoom { flex:none; display:flex; align-items:center; gap:2px; padding:0 6px; }
+
+.sol-exp-einfo-zoom .sol-exp-editor-btn { padding:1px 6px; line-height:16px; font-size:11px; }
+
+.sol-exp-einfo-zoom-value { color:var(--dsw-alias-label-tertiary); font-size:11px; margin-left:4px; }
+
+.sol-exp-einfo-status.saving { color:var(--dsw-alias-label-secondary); }
+
+.sol-exp-einfo-status.dirty { color:#e2b714; }
+
+.sol-exp-einfo-status.saved { color:#4ec9b0; }
+
+
+
+.sol-exp-editor-header { display:flex; align-items:center; justify-content:space-between; gap:4px; padding:6px 8px; border-bottom:1px solid var(--dsw-alias-border-l1); flex-shrink:0; }
+
+.sol-exp-editor-path { font-size:12px; color:var(--dsw-alias-label-secondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
 .sol-exp-editor-actions { display:flex; gap:4px; flex-shrink:0; }
 
@@ -242,17 +307,17 @@ export const STYLES = `
 
 .sol-exp-editor-btn:hover { opacity:.85; }
 
-.sol-exp-editor-btn.primary { background:var(--dsw-alias-bg-modifier,#0078d4); color:#fff; }
+.sol-exp-editor-btn.primary { background:var(--dsw-alias-bg-modifier); color:#fff; }
 
 .sol-exp-editor-btn.primary:disabled { opacity:.4; cursor:not-allowed; }
 
-.sol-exp-editor-textarea { flex:1; min-height:0; width:100%; box-sizing:border-box; padding:8px 12px; border:none; background:var(--dsw-alias-bg-input,#1e1e1e); color:var(--dsw-alias-label-primary); font-family:'Cascadia Code','Fira Code','JetBrains Mono','Consolas','Courier New',monospace; font-size:13px; line-height:1.5; outline:none; resize:none; tab-size:2; }
+.sol-exp-editor-textarea { flex:1; min-height:0; width:100%; box-sizing:border-box; padding:8px 12px; border:none; background:var(--dsw-alias-bg-input); color:var(--dsw-alias-label-primary); font-family:'Cascadia Code','Fira Code','JetBrains Mono','Consolas','Courier New',monospace; font-size:13px; line-height:1.5; outline:none; resize:none; tab-size:2; }
 
-.sol-exp-editor-textarea:focus { background:var(--dsw-alias-bg-input,#252526); }
+.sol-exp-editor-textarea:focus { background:var(--dsw-alias-bg-input); }
 
-.sol-exp-editor-status { display:flex; align-items:center; gap:6px; padding:2px 8px; border-top:1px solid var(--dsw-alias-border-l1,#333); font-size:11px; color:var(--dsw-alias-label-tertiary,#6e6e6e); flex-shrink:0; }
+.sol-exp-editor-status { display:flex; align-items:center; gap:6px; padding:2px 8px; border-top:1px solid var(--dsw-alias-border-l1); font-size:11px; color:var(--dsw-alias-label-tertiary); flex-shrink:0; }
 
-.sol-exp-editor-saving { color:var(--dsw-alias-label-secondary,#969696); }
+.sol-exp-editor-saving { color:var(--dsw-alias-label-secondary); }
 
 .sol-exp-editor-saved { color:#4ec9b0; }
 
@@ -276,56 +341,56 @@ export const STYLES = `
 .sol-exp-hl .hljs-char.escape_, .sol-exp-hl .hljs-link, .sol-exp-hl .hljs-params, .sol-exp-hl .hljs-property, .sol-exp-hl .hljs-punctuation, .sol-exp-hl .hljs-tag { }
 .sol-exp-scm-section.collapsed > *:not(.sol-exp-scm-section-header) { display:none !important; }
 .sol-exp-scm-section.collapsed .sol-exp-scm-section-header svg { transform: rotate(0deg) !important; }
-.sol-exp-branch-pill { display:inline-flex; align-items:center; gap:4px; padding:1px 8px; border-radius:999px; background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.08)); font-size:11px; font-weight:500; color:var(--dsw-alias-label-primary,#d4d4d4); }
-.sol-exp-commit-item { display:flex; align-items:center; gap:6px; padding:3px 4px; border-radius:6px; cursor:pointer; }
-.sol-exp-commit-item:hover { background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.06)); }
-.sol-exp-commit-item.selected { background:var(--dsw-alias-interactive-bg-active,rgba(0,120,212,0.2)); }
+.sol-exp-branch-pill { display:inline-flex; align-items:center; gap:4px; padding:1px 8px; border-radius:999px; background:var(--dsw-alias-interactive-bg-hover); font-size:11px; font-weight:500; color:var(--dsw-alias-label-primary); }
+.sol-exp-commit-item { display:flex; align-items:center; gap:6px; min-width:0; padding:5px 10px; box-sizing:border-box; border-radius:10px; cursor:pointer; }
+.sol-exp-commit-item:hover { background:var(--dsw-alias-interactive-bg-hover); }
+.sol-exp-commit-item.selected { background:var(--dsw-alias-interactive-bg-active); }
 .sol-exp-graph-svg { flex:none; display:block; }
-.sol-exp-commit-hash { font-family:monospace; font-size:11px; color:var(--dsw-alias-label-tertiary,#6e6e6e); flex:none; }
-.sol-exp-commit-msg { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; color:var(--dsw-alias-label-primary,#d4d4d4); }
-.sol-exp-commit-date { flex:none; font-size:11px; color:var(--dsw-alias-label-tertiary,#6e6e6e); }
-.sol-exp-commit-detail { margin:2px 4px 6px; padding:6px 10px; border:1px solid var(--dsw-alias-border-l2,#333); border-radius:6px; background:var(--dsw-alias-bg-input,rgba(0,0,0,0.2)); font-size:12px; }
+.sol-exp-commit-hash { font-family:monospace; font-size:11px; color:var(--dsw-alias-label-tertiary); flex:none; }
+.sol-exp-commit-msg { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; color:var(--dsw-alias-label-primary); }
+.sol-exp-commit-date { flex:none; font-size:11px; color:var(--dsw-alias-label-tertiary); }
+.sol-exp-commit-detail { margin:2px 4px 6px; padding:6px 10px; border:1px solid var(--dsw-alias-border-l2); border-radius:6px; background:var(--dsw-alias-bg-input); font-size:12px; }
 .sol-exp-commit-detail-row { display:flex; gap:8px; padding:2px 0; align-items:baseline; }
-.sol-exp-commit-detail-label { flex:none; width:52px; color:var(--dsw-alias-label-tertiary,#6e6e6e); }
-.sol-exp-commit-detail-val { flex:1; min-width:0; word-break:break-all; color:var(--dsw-alias-label-primary,#d4d4d4); }
-.sol-exp-commit-detail-file { padding:1px 0 1px 52px; color:var(--dsw-alias-label-secondary,#969696); font-family:monospace; font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.sol-exp-commit-detail-close { margin-left:auto; background:transparent; border:none; color:var(--dsw-alias-label-tertiary,#6e6e6e); cursor:pointer; font-size:13px; padding:0 2px; }
-.sol-exp-commit-detail-close:hover { color:var(--dsw-alias-label-primary,#d4d4d4); }
-.sol-exp-commit-detail-btn { background:transparent; border:1px solid var(--dsw-alias-border-l2,#333); color:var(--dsw-alias-label-secondary,#969696); border-radius:4px; padding:2px 8px; font-size:11px; cursor:pointer; }
-.sol-exp-commit-detail-btn:hover { background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.1)); color:var(--dsw-alias-label-primary,#d4d4d4); }
+.sol-exp-commit-detail-label { flex:none; width:52px; color:var(--dsw-alias-label-tertiary); }
+.sol-exp-commit-detail-val { flex:1; min-width:0; word-break:break-all; color:var(--dsw-alias-label-primary); }
+.sol-exp-commit-detail-file { padding:1px 0 1px 52px; color:var(--dsw-alias-label-secondary); font-family:monospace; font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sol-exp-commit-detail-close { margin-left:auto; background:transparent; border:none; color:var(--dsw-alias-label-tertiary); cursor:pointer; font-size:13px; padding:0 2px; }
+.sol-exp-commit-detail-close:hover { color:var(--dsw-alias-label-primary); }
+.sol-exp-commit-detail-btn { background:transparent; border:1px solid var(--dsw-alias-border-l2); color:var(--dsw-alias-label-secondary); border-radius:4px; padding:2px 8px; font-size:11px; cursor:pointer; }
+.sol-exp-commit-detail-btn:hover { background:var(--dsw-alias-interactive-bg-hover); color:var(--dsw-alias-label-primary); }
 .sol-exp-git-C { color:#58a6ff; } .sol-exp-git-T { color:#e2b714; }
 /* Inline changed-file list expanded below a clicked commit row. */
-.sol-exp-commit-detail-inline { margin:0 4px 6px; border:1px solid var(--dsw-alias-border-l2,#333); border-left:3px solid var(--dsw-alias-button-info-fill,#3964fe); border-radius:6px; background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.06)); font-size:12px; padding:6px 8px; }
-.sol-exp-commit-file-row { display:flex; align-items:center; gap:6px; padding:2px 2px; border-radius:4px; }
-.sol-exp-commit-file-row:hover { background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.06)); }
+.sol-exp-commit-detail-inline { margin:0 4px 6px; border:1px solid var(--dsw-alias-border-l2); border-left:3px solid var(--dsw-alias-button-info-fill); border-radius:6px; background:var(--dsw-alias-interactive-bg-hover); font-size:12px; padding:6px 8px; }
+.sol-exp-commit-file-row { display:flex; align-items:center; gap:6px; min-width:0; padding:4px 8px; border-radius:8px; }
+.sol-exp-commit-file-row:hover { background:var(--dsw-alias-interactive-bg-hover); }
 .sol-exp-commit-file-icon { flex:none; display:inline-flex; width:16px; }
-.sol-exp-commit-file-path { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--dsw-alias-label-secondary,#969696); font-family:monospace; font-size:11px; }
+.sol-exp-commit-file-path { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--dsw-alias-label-secondary); font-family:monospace; font-size:11px; }
 .sol-exp-commit-file-status { flex:none; font-size:11px; font-weight:700; width:14px; text-align:center; }
 .sol-exp-commit-detail-footer { display:flex; justify-content:flex-end; padding-top:4px; }
 /* Hover tooltip for commit rows. */
-.sol-exp-commit-tooltip { position:fixed; z-index:100001; max-width:340px; max-height:280px; overflow-y:auto; padding:8px 12px; border-radius:8px; background:var(--dsw-alias-bg-overlay,var(--dsw-alias-bg-layer-3,#1e1e1e)); border:1px solid var(--dsw-alias-border-l2,#333); box-shadow:0 4px 16px rgba(0,0,0,0.35); font-size:12px; color:var(--dsw-alias-label-primary,#d4d4d4); }
-.sol-exp-commit-tip-msg { white-space:pre-wrap; word-break:break-word; color:var(--dsw-alias-label-primary,#d4d4d4); }
-.sol-exp-commit-tip-stats { margin-top:6px; color:var(--dsw-alias-label-secondary,#969696); }
-.sol-exp-commit-tip-meta { margin-top:4px; color:var(--dsw-alias-label-tertiary,#6e6e6e); }
+.sol-exp-commit-tooltip { position:fixed; z-index:100001; max-width:340px; max-height:280px; overflow-y:auto; padding:8px 12px; border-radius:8px; background:var(--dsw-alias-bg-overlay,var(--dsw-alias-bg-layer-3)); border:1px solid var(--dsw-alias-border-l2); box-shadow:0 4px 16px rgba(0,0,0,0.35); font-size:12px; color:var(--dsw-alias-label-primary); }
+.sol-exp-commit-tip-msg { white-space:pre-wrap; word-break:break-word; color:var(--dsw-alias-label-primary); }
+.sol-exp-commit-tip-stats { margin-top:6px; color:var(--dsw-alias-label-secondary); }
+.sol-exp-commit-tip-meta { margin-top:4px; color:var(--dsw-alias-label-tertiary); }
 .sol-exp-commit-tip-hash { margin-top:6px; display:flex; align-items:center; gap:8px; }
-.sol-exp-commit-tip-link { color:var(--dsw-alias-label-link,#58a6ff); text-decoration:none; }
+.sol-exp-commit-tip-link { color:var(--dsw-alias-label-link); text-decoration:none; }
 .sol-exp-commit-tip-link:hover { text-decoration:underline; }
-.sol-exp-scm-status { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:4px; font-size:11px; font-weight:700; background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.06)); }
+.sol-exp-scm-status { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:4px; font-size:11px; font-weight:700; background:var(--dsw-alias-interactive-bg-hover); }
 .sol-exp-scm-host { flex:1; min-height:0; display:flex; flex-direction:column; }
 .sol-exp-scm-split { flex:1; min-height:0; height:100%; display:flex; flex-direction:column; }
 .sol-exp-scm-top { flex:1 1 55%; min-height:0; overflow-y:auto; }
-.sol-exp-scm-divider { position:relative; flex:none; height:4px; cursor:row-resize; background:var(--dsw-alias-border-l1,#333); z-index:3; }
+.sol-exp-scm-divider { position:relative; flex:none; height:4px; cursor:row-resize; background:var(--dsw-alias-border-l1); z-index:3; }
 .sol-exp-scm-divider::before { content:''; position:absolute; left:0; right:0; top:-6px; bottom:-6px; }
-.sol-exp-scm-divider:hover { background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.12)); }
+.sol-exp-scm-divider:hover { background:var(--dsw-alias-interactive-bg-hover); }
 .sol-exp-scm-bottom { flex:1 1 45%; min-height:0; display:flex; flex-direction:column; }
 .sol-exp-scm-section[data-section="commits"] { flex:1; min-height:0; display:flex; flex-direction:column; }
-.sol-exp-repo-item { display:flex; align-items:center; gap:6px; padding:3px 8px; border-radius:6px; cursor:pointer; font-size:12px; }
-.sol-exp-repo-item:hover { background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.06)); }
-.sol-exp-repo-item.active { background:var(--dsw-alias-interactive-bg-active,rgba(0,120,212,0.2)); }
-.sol-exp-repo-icon { flex:none; color:var(--dsw-alias-state-business-primary,#58a6ff); }
-.sol-exp-repo-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--dsw-alias-label-primary,#d4d4d4); }
-.sol-exp-repo-branch { flex:none; font-size:11px; color:var(--dsw-alias-label-tertiary,#6e6e6e); }
-.sol-exp-rename-input { flex:1; min-width:0; box-sizing:border-box; border:1px solid var(--dsw-alias-brand-primary,#4a9eff); border-radius:4px; background:var(--dsw-alias-bg-input,#1e1e1e); color:var(--dsw-alias-label-primary,#d4d4d4); font:inherit; font-size:13px; line-height:20px; padding:0 4px; outline:none; }
+.sol-exp-repo-item { display:flex; align-items:center; gap:6px; min-width:0; padding:5px 10px; box-sizing:border-box; border-radius:10px; cursor:pointer; font-size:12px; }
+.sol-exp-repo-item:hover { background:var(--dsw-alias-interactive-bg-hover); }
+.sol-exp-repo-item.active { background:var(--dsw-alias-interactive-bg-active); }
+.sol-exp-repo-icon { flex:none; color:var(--dsw-alias-state-business-primary); }
+.sol-exp-repo-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--dsw-alias-label-primary); }
+.sol-exp-repo-branch { flex:none; font-size:11px; color:var(--dsw-alias-label-tertiary); }
+.sol-exp-rename-input { flex:1; min-width:0; box-sizing:border-box; border:1px solid var(--dsw-alias-brand-primary); border-radius:4px; background:var(--dsw-alias-bg-input); color:var(--dsw-alias-label-primary); font:inherit; font-size:13px; line-height:20px; padding:0 4px; outline:none; }
 
 /* Settings page ("资源管理器" section) — flat grouped cards matching the
    native notification settings page style. */

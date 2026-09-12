@@ -5,19 +5,46 @@
  * @module dsh-solution-explorer/client/explorer/tree-render
  */
 
-import { t } from "../locales.ts"
 
-import { escapeHtml } from "../shared/dom.ts"
 
-import { folderIcon, fileIcon, gitStatusClass } from "./icons.ts"
-
-import type { AppState, TreeState, ClipboardState } from "../state/store.ts"
+import type { AppState } from "../state/store.ts"
+import { commands } from '../commands.ts'
 
 export interface Deps {
   state: AppState
   render: () => void
   /** Injected cross-domain capability (SCM status refresh). */
   loadGitStatus?: (deps?: any) => Promise<void>
+}
+
+/**
+ * The tree is fetched pruned to the directories the client renders, so the
+ * payload tracks the visible rows instead of the whole workspace. `all` asks
+ * for the complete tree (the "expand all" action and nothing else).
+ */
+function treeUrl(state: AppState, all = false): string {
+  const root = encodeURIComponent(state.root);
+  if (all) return `/solution-explorer/tree?root=${root}&expand=*`;
+  // JSON-encoded so a directory name containing a comma cannot split wrongly.
+  const paths = [...state.tree.expandedPaths].map((p) => p.replace(/\\/g, "/"));
+  return `/solution-explorer/tree?root=${root}&expand=${encodeURIComponent(JSON.stringify(paths))}`;
+}
+
+/** Depth-first lookup of a materialized node by path. */
+function findNode(node: any, path: string): any {
+  if (!node) return null;
+  if (node.path === path) return node;
+  for (const child of node.children ?? []) {
+    const hit = findNode(child, path);
+    if (hit) return hit;
+  }
+  return null;
+}
+
+/** True when the node is a directory whose children have not been fetched. */
+function needsChildren(state: AppState, path: string): boolean {
+  const node = findNode(state.tree.treeState, path);
+  return !!node && node.type === "directory" && node.children === undefined;
 }
 
 export async function loadTree({ state, render }: Deps) {
@@ -42,7 +69,7 @@ export async function loadTree({ state, render }: Deps) {
 
 					try {
 
-						const result = await (await fetch(`/solution-explorer/tree?root=${encodeURIComponent(state.root)}`)).json();
+						const result = await (await fetch(treeUrl(state))).json();
 
 						if (seq !== state.loadSeq || state.root === "") return;
 
@@ -52,11 +79,10 @@ export async function loadTree({ state, render }: Deps) {
 
 							if (hadTree) {
 
-								const container = state.activeEl ? state.activeEl.querySelector(".sol-exp-tree") : null;
-
-								if (container) reconcileTree(container, state.tree.treeState.children || [], 0, state.tree, state.clipboard);
-
-								else render();
+								// React renders the tree now: publish the fresh
+								// state and let the root re-render (no manual DOM
+								// reconciliation).
+								render();
 
 							} else {
 
@@ -92,7 +118,7 @@ export async function refreshTreeSilent({ state, render }: Deps) {
 
 					try {
 
-						const result = await (await fetch(`/solution-explorer/tree?root=${encodeURIComponent(state.root)}`)).json();
+						const result = await (await fetch(treeUrl(state))).json();
 
 						if (seq !== state.loadSeq || state.root === "") return;
 
@@ -100,9 +126,8 @@ export async function refreshTreeSilent({ state, render }: Deps) {
 
 							state.tree.treeState = result.value;
 
-							const container = state.activeEl ? state.activeEl.querySelector(".sol-exp-tree") : null;
-
-							if (container) reconcileTree(container, state.tree.treeState.children || [], 0, state.tree, state.clipboard);
+							// React renders the tree now: re-render from state.
+							render();
 
 						}
 
@@ -110,238 +135,69 @@ export async function refreshTreeSilent({ state, render }: Deps) {
 
 				}
 
-export function buildExplorerContent(tree: TreeState, clipboard: ClipboardState, root: string): string {
+/** Fetch the whole tree and publish it (used by "expand all"). */
+export async function loadFullTree({ state, render }: Deps): Promise<any | null> {
 
-					const emptyText = t("panel.empty");
+					if (!state.root) return null;
 
-					let contentHTML = "";
+					const seq = ++state.loadSeq;
 
-					if (tree.loading) contentHTML = `<div class="sol-exp-loading">${t("loading")}</div>`;
+					try {
 
-					else if (tree.error) contentHTML = `<div class="sol-exp-error">${tree.error}</div>`;
+						const result = await (await fetch(treeUrl(state, true))).json();
 
-					else if (tree.treeState) contentHTML = "<div class=\"sol-exp-tree\" oncontextmenu=\"event.preventDefault();event.stopPropagation();window.__solExpContextMenu('', event.pageX, event.pageY, false)\" ondragover=\"event.preventDefault();event.stopPropagation()\" ondrop=\"event.preventDefault();event.stopPropagation();window.__solExpDrop('', event)\">" + (tree.treeState.children || []).map((c) => renderTreeNode(c, 0, tree, clipboard)).join("") + "</div>";
+						if (seq !== state.loadSeq || state.root === "" || !result.ok || !result.value) return null;
 
-					else contentHTML = `<div class="sol-exp-empty">${emptyText}</div>`;
+						state.tree.treeState = result.value;
 
-					return `
+						render();
 
-        <div class="sol-exp-header">
+						return result.value;
 
-          <span class="sol-exp-title">${root ? root.split(/[\\\/]/).pop() || root : ""}</span>
-
-          <div class="sol-exp-header-actions">
-
-            <button class="sol-exp-toolbar-btn" onclick="window.__solExpExpandAll()" title="${t("tree.expand")}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 3.5h11"/><path d="M2.5 7.5h11"/><path d="M2.5 11.5h6"/><path d="M10.6 10.4l2.4 2.2 2.4-2.2"/></svg></button>
-
-            <button class="sol-exp-toolbar-btn" onclick="window.__solExpCollapseAll()" title="${t("tree.collapse")}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 3.5h11"/><path d="M2.5 7.5h11"/><path d="M2.5 11.5h6"/><path d="M10.6 14.2l2.4-2.2 2.4 2.2"/></svg></button>
-
-            <button class="sol-exp-toolbar-btn" onclick="window.__solExpNew('file', '')" title="${document.documentElement.lang?.startsWith("zh") ? "新建文件" : "New file"}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 1.5h3.5L12.5 5v8.5a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1V2.5a1 1 0 0 1 1-1z"/><path d="M9 1.5V5h3.5"/></svg></button>
-
-            <button class="sol-exp-toolbar-btn" onclick="window.__solExpNew('dir', '')" title="${document.documentElement.lang?.startsWith("zh") ? "新建文件夹" : "New folder"}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 4.5h3.5l1.5 1.5H13a1.5 1.5 0 0 1 1.5 1.5v4.5a1.5 1.5 0 0 1-1.5 1.5H3A1.5 1.5 0 0 1 1.5 12v-7.5z"/></svg></button>
-
-            <button class="sol-exp-toolbar-btn" onclick="window.__solExpRefresh()" title="${document.documentElement.lang?.startsWith("zh") ? "刷新" : "Refresh"}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 8a5.5 5.5 0 1 1-1.61-3.89"/><path d="M13.5 3.5V7H10"/></svg></button>
-
-          </div>
-
-
-
-        </div>
-
-        <div class="sol-exp-content">${contentHTML}</div>
-
-      `;
+					} catch { return null; }
 
 				}
 
-export function renderTreeNode(node: any, depth: number, tree: TreeState, clipboard: ClipboardState): string {
-
-					if (!node) return "";
-
-					const isDir = node.type === "directory";
-
-					const isExpanded = tree.expandedPaths.has(node.path);
-
-					const isSelected = tree.selectedPaths.has(node.path);
-
-					const isCut = clipboard.clipboard?.mode === "cut" && clipboard.clipboard.paths.includes(node.path);
-
-					const isDropTarget = isDir && clipboard.dropTargetPath === node.path && clipboard.dragPaths.length > 0;
-
-					const hasChildren = isDir && node.children && node.children.length > 0;
-
-					const padding = 12 + depth * 16;
-
-					// Map git status letters to stable shared class suffixes.
-					const gitCls = node.gitStatus ? gitStatusClass(node.gitStatus) : "";
-
-					const pathJs = node.path.replace(/'/g, "\\'").replace(/\\/g, "\\\\");
-
-					const chevron = isDir ? hasChildren ? `<svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" style="transform:${isExpanded ? "rotate(90deg)" : "rotate(0deg)"};transition:transform .15s ease"><path d="M4.25 2.82782L4.25 11.1722C4.25 11.6622 4.84243 11.9076 5.18891 11.5611L9.36109 7.38891C9.57588 7.17412 9.57588 6.82588 9.36109 6.61109L5.18891 2.43891C4.84243 2.09243 4.25 2.33782 4.25 2.82782Z"/></svg>` : "<span style=\"width:16px;display:inline-block\"></span>" : "<span style=\"width:16px;display:inline-block\"></span>";
-
-					const icon = isDir ? folderIcon(isExpanded) : fileIcon(node.name);
-
-					const childrenHTML = isDir && isExpanded && hasChildren ? `<div class="sol-exp-tree-children">${node.children.map((c) => renderTreeNode(c, depth + 1, tree, clipboard)).join("")}</div>` : "";
-
-					return `
-
-        <div class="sol-exp-tree-node-wrapper">
-
-          <div class="sol-exp-tree-node ${isSelected ? "sol-exp-selected" : ""}${isCut ? " sol-exp-cut" : ""}${isDropTarget ? " sol-exp-drop-target" : ""}"
-
-               style="padding-left:${padding}px"
-
-               draggable="true"
-
-               onclick="window.__solExpSelect('${pathJs}', event.shiftKey, event.ctrlKey || event.metaKey, ${isDir})"
-
-               ${isDir ? "" : `ondblclick="window.__solExpOpenFile('${pathJs}')"`}
-
-               ondragstart="window.__solExpDragStart('${pathJs}')"
-
-               ${isDir ? `ondragover="event.preventDefault();event.stopPropagation();window.__solExpDragOver('${pathJs}')" ondrop="event.preventDefault();event.stopPropagation();window.__solExpDrop('${pathJs}', event)"` : ""}
-
-               data-sol-exp-path="${escapeHtml(node.path)}"
-
-               data-sol-exp-isdir="${isDir ? "1" : "0"}"
-
-               oncontextmenu="event.preventDefault();event.stopPropagation();window.__solExpContextMenu(this.dataset.solExpPath||'', event.pageX, event.pageY, this.dataset.solExpIsdir === '1')">
-
-            <span class="sol-exp-chevron">${chevron}</span>
-
-            <span class="sol-exp-file-icon">${icon}</span>
-
-            ${node.path === tree.renamingPath
-              ? `<input class="sol-exp-rename-input" data-sol-exp-rename="1" value="${escapeHtml(node.name)}" onclick="event.stopPropagation()" onkeydown="if(event.key==='Enter')window.__solExpRenameCommit(this.value);else if(event.key==='Escape')window.__solExpRenameCancel()" onblur="window.__solExpRenameCommit(this.value)" />`
-              : `<span class="sol-exp-file-name${gitCls ? " sol-exp-git-" + gitCls : ""}">${escapeHtml(node.name)}</span>`}
-
-            ${node.gitStatus ? `<span class="sol-exp-git-letter sol-exp-git-${gitCls}">${node.gitStatus}</span>` : ""}
-
-          </div>
-
-          ${childrenHTML}
-
-        </div>
-
-      `;
-
-				}
-
-export function reconcileTree(container: any, nodes: any[] | undefined, depth: number, tree: TreeState, clipboard: ClipboardState): void {
-
-					if (!container || !nodes) return;
-
-					const existing = new Map();
-
-					for (const wrapper of container.children) {
-
-						const row = wrapper.firstElementChild;
-
-						const p = row ? row.getAttribute("data-sol-exp-path") : null;
-
-						if (p !== null && p !== undefined) existing.set(p, wrapper);
-
-					}
-
-					const seen = new Set();
-
-					const tmp = document.createElement("div");
-
-					for (let i = 0; i < nodes.length; i++) {
-
-						const node = nodes[i];
-
-						seen.add(node.path);
-
-						const wrapper = existing.get(node.path);
-
-						if (wrapper) {
-
-							// Rebuild this node's row only when its content
-							// actually changed (name/git status/state) — an
-							// unchanged row keeps its DOM untouched so the
-							// tree does not repaint on every refresh.
-							tmp.innerHTML = renderTreeNode(node, depth, tree, clipboard);
-
-							const newRow = tmp.querySelector(".sol-exp-tree-node");
-
-							const oldRow = wrapper.querySelector(".sol-exp-tree-node");
-
-							if (newRow && oldRow && newRow.outerHTML !== oldRow.outerHTML) oldRow.replaceWith(newRow);
-
-							const isDir = node.type === "directory";
-
-							if (isDir && tree.expandedPaths.has(node.path)) {
-
-								const childBox = wrapper.querySelector(".sol-exp-tree-children");
-
-								if (childBox && node.children) reconcileTree(childBox, node.children, depth + 1, tree, clipboard);
-
-							}
-
-						} else {
-
-							// New node: build its wrapper and insert it before
-							// the next existing sibling (keeps order stable).
-							tmp.innerHTML = renderTreeNode(node, depth, tree, clipboard);
-
-							const newWrapper = tmp.firstElementChild;
-
-							if (!newWrapper) continue;
-
-							let ref = null;
-
-							for (let j = i + 1; j < nodes.length; j++) {
-
-								if (existing.has(nodes[j].path)) { ref = existing.get(nodes[j].path); break; }
-
-							}
-
-							container.insertBefore(newWrapper, ref);
-
-						}
-
-					}
-
-					// Remove wrappers that no longer exist in the new tree.
-					for (const [p, wrapper] of existing) {
-
-						if (!seen.has(p)) wrapper.remove();
-
-					}
-
-				}
-
-/** Register the tree-interaction bridges (window.__solExp*). Returns a disposer. */
-export function registerTreeBridges(deps: Deps): () => void {
+export function registerTreeCommands(deps: Deps): () => void {
   const { state, render } = deps
 
-  window.__solExpToggleExpand = (path) => {
-    if (state.tree.expandedPaths.has(path)) state.tree.expandedPaths.delete(path);
-    else state.tree.expandedPaths.add(path);
+  commands.toggleExpand = (path) => {
+    if (state.tree.expandedPaths.has(path)) {
+      state.tree.expandedPaths.delete(path);
+      render();
+      return;
+    }
+    state.tree.expandedPaths.add(path);
+    // A collapsed directory arrives without children, so expanding one means
+    // fetching just that level. Already-loaded directories stay instant.
+    const missing = needsChildren(state, path);
     render();
+    if (missing) void refreshTreeSilent(deps);
   };
 
-  window.__solExpSelectFile = async (path, isDir) => {
+  commands.selectFile = async (path, isDir) => {
     if (isDir) {
       // Directories reveal in the tree (expand ancestors + select) instead of
       // being opened as files — consistent with the tree.
       const parts = path.split("/").filter(Boolean);
       let acc = "";
+      let missing = false;
       for (let i = 0; i < parts.length - 1; i++) {
         acc = acc ? acc + "/" + parts[i] : parts[i];
         state.tree.expandedPaths.add(acc);
+        if (needsChildren(state, acc)) missing = true;
       }
       state.tree.selectedPaths = new Set([path]);
       state.tree.selectedPath = null;
       render();
+      if (missing) void refreshTreeSilent(deps);
       return;
     }
     state.tree.selectedPath = path;
-    if (typeof window.__solExpOpenFile === "function") window.__solExpOpenFile(path);
+    if (typeof commands.openFile === "function") commands.openFile(path);
   };
 
-  window.__solExpClearSelection = () => {
+  commands.clearSelection = () => {
     if (state.tree.selectedPaths.size || state.tree.selectedPath) {
       state.tree.selectedPaths = new Set<string>();
       state.tree.selectionAnchor = null;
@@ -350,7 +206,7 @@ export function registerTreeBridges(deps: Deps): () => void {
     }
   };
 
-  window.__solExpSelect = (path, shift, ctrl, isDir) => {
+  commands.select = (path, shift, ctrl, isDir) => {
     if (ctrl) {
       if (state.tree.selectedPaths.has(path)) state.tree.selectedPaths.delete(path);
       else state.tree.selectedPaths.add(path);
@@ -375,30 +231,43 @@ export function registerTreeBridges(deps: Deps): () => void {
       state.tree.selectionAnchor = path;
     }
     state.tree.selectedPath = path;
-    if (isDir) if (state.tree.expandedPaths.has(path)) state.tree.expandedPaths.delete(path);
-    else state.tree.expandedPaths.add(path);
+    let expandMissing = false;
+    if (isDir) {
+      if (state.tree.expandedPaths.has(path)) state.tree.expandedPaths.delete(path);
+      else {
+        state.tree.expandedPaths.add(path);
+        expandMissing = needsChildren(state, path);
+      }
+    }
     render();
+    if (expandMissing) void refreshTreeSilent(deps);
   };
 
-  window.__solExpCollapseAll = () => {
+  commands.collapseAll = () => {
     state.tree.expandedPaths = new Set<string>();
     render();
+    // Re-fetch so the collapsed listings are dropped host-side too.
+    void refreshTreeSilent(deps);
   };
 
-  window.__solExpExpandAll = () => {
+  commands.expandAll = async () => {
+    // Everything expanded means everything materialized: this is the one
+    // action that legitimately pulls the whole tree.
+    const full = await loadFullTree(deps);
+    if (!full) return;
     const paths = new Set<string>();
     const collect = (n) => {
-      if (n?.type === "directory") {
+      if (n?.type === "directory" && n.path !== "/") {
         paths.add(n.path);
         for (const c of n.children || []) collect(c);
       }
     };
-    if (state.tree.treeState) collect(state.tree.treeState);
+    collect(full);
     state.tree.expandedPaths = paths;
     render();
   };
 
-  window.__solExpRefresh = () => {
+  commands.refresh = () => {
     // Refresh without the loading flash once a tree exists: reconcile in
     // place; only the very first load falls back to the full loading path.
     if (state.tree.treeState) refreshTreeSilent(deps);
@@ -407,12 +276,12 @@ export function registerTreeBridges(deps: Deps): () => void {
   };
 
   return () => {
-    delete window.__solExpToggleExpand;
-    delete window.__solExpSelectFile;
-    delete window.__solExpClearSelection;
-    delete window.__solExpSelect;
-    delete window.__solExpCollapseAll;
-    delete window.__solExpExpandAll;
-    delete window.__solExpRefresh;
+    delete commands.toggleExpand;
+    delete commands.selectFile;
+    delete commands.clearSelection;
+    delete commands.select;
+    delete commands.collapseAll;
+    delete commands.expandAll;
+    delete commands.refresh;
   };
 }
