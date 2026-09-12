@@ -98,6 +98,11 @@ export function getGitStatus(root: string): GitEnvelope {
  * Annotate each file node with its git status letter (M/A/D/R/U/?) or an
  * ignored marker ('!'), and each directory with 'M' when any descendant has
  * changes, '!' when it is itself excluded, otherwise undefined — VS Code style.
+ *
+ * Directory markers come from the status paths themselves (every ancestor of a
+ * changed path is marked), never from the materialized children: the tree is
+ * sent pruned to the expanded directories, so a collapsed folder holding
+ * changes must still light up.
  * @param node - the tree node to annotate.
  * @param status - the repository git status (staged + unstaged + untracked + ignored).
  * @returns whether this node (or any descendant) has a change.
@@ -116,25 +121,31 @@ export function annotateGitStatus(node: FileTreeNode, status: GitStatusData): bo
     if (!map.has(norm(c.path))) map.set(norm(c.path), 'U')
   }
   const ignoredSet = new Set(status.ignored.map((c) => norm(c.path)))
+  // Every directory on the way to a changed path is itself "changed".
+  const changedDirs = new Set<string>()
+  for (const p of map.keys()) {
+    const segments = p.split('/')
+    let acc = ''
+    for (let i = 0; i < segments.length - 1; i++) {
+      acc = acc ? acc + '/' + segments[i] : segments[i]
+      changedDirs.add(acc)
+    }
+  }
   // Git reports an ignored directory as a single "!! dir/" line and never
   // expands its contents, so inherit the ignored state down the tree:
   // everything under an excluded directory is greyed too, unless a tracked
   // change (e.g. a force-added file) overrides the marker.
-  const walk = (n: FileTreeNode, parentIgnored: boolean): boolean => {
+  const walk = (n: FileTreeNode, parentIgnored: boolean): void => {
     const key = norm(n.path)
     const selfIgnored = parentIgnored || ignoredSet.has(key)
     if (n.type === 'file') {
       n.gitStatus = map.get(key) ?? (selfIgnored ? '!' : undefined)
-      return n.gitStatus !== undefined && n.gitStatus !== '!'
-    }
-    let hasChanges = false
-    for (const child of n.children ?? []) {
-      if (walk(child, selfIgnored)) hasChanges = true
+      return
     }
     // A change anywhere beats an "ignored" marker; an ignored directory with
     // no changes shows grey ('!') so excluded folders read at a glance.
-    n.gitStatus = hasChanges ? 'M' : selfIgnored ? '!' : undefined
-    return hasChanges
+    n.gitStatus = changedDirs.has(key) ? 'M' : selfIgnored ? '!' : undefined
+    for (const child of n.children ?? []) walk(child, selfIgnored)
   }
   walk(node, false)
   return true

@@ -5,6 +5,7 @@ import { spawn } from 'node:child_process'
 import { json, ensureInside, autoRename, movePath } from '../http-util.ts'
 import { buildFileTree, searchFiles, IMAGE_EXT, imageMime } from '../tree.ts'
 import { getGitStatus, annotateGitStatus } from '../status.ts'
+import { normPath } from '../paths.ts'
 import { Config } from '../config.ts'
 import type { Handler } from './context.ts'
 
@@ -14,7 +15,29 @@ export const fsGet: Record<string, Handler> = {
     if (!root) { json(res, { ok: false, error: { message: 'root required' } }); return }
     try {
       const config = getConfig()
-      const tree = await buildFileTree(root, '', config.filterPatterns, !!config.showHidden)
+      // `expand` bounds the walk to the directories the client renders:
+      // absent → whole tree, `*` → whole tree, otherwise the expanded
+      // directories. The client sends a JSON array (a path may contain a
+      // comma); a plain comma-separated list is still accepted by hand.
+      const expandRaw = query.expand
+      let expandPaths: Set<string> | null = null
+      if (expandRaw !== undefined && expandRaw !== '*') {
+        let list: string[] = []
+        if (expandRaw.startsWith('[')) {
+          try {
+            const parsed: unknown = JSON.parse(expandRaw)
+            if (Array.isArray(parsed)) list = parsed.filter((p): p is string => typeof p === 'string')
+          } catch { list = [] }
+        } else {
+          list = expandRaw.split(',')
+        }
+        expandPaths = new Set(
+          list
+            .map((p) => normPath(p.trim()))
+            .filter((p) => p.length > 0 && p !== '/'),
+        )
+      }
+      const tree = await buildFileTree(root, '', config.filterPatterns, !!config.showHidden, expandPaths)
       // Annotate each file with its git status letter and each directory
       // with a "modified" marker (VS Code explorer style).
       const status = getGitStatus(root)
