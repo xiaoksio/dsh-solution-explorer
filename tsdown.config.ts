@@ -47,11 +47,19 @@ export default defineConfig([
     fixedExtension: false,
     dts: false,
     clean: false,
-    // Bundle third-party deps (highlight.js) into the artifact; keep react
-    // external — the DSH web shell seeds it through the module table.
+    // Bundle only non-shared third-party deps (e.g. highlight.js) into the
+    // artifact; keep react and the @deepseek-ai/dsh-client-* packages external —
+    // the DSH web shell seeds them through the module table / PLATFORM_MODULES,
+    // so official icons & primitives are loaded at runtime, never duplicated.
     deps: {
-      neverBundle: (specifier: string) => specifier === 'react' || specifier.startsWith('react/'),
-      alwaysBundle: (specifier: string) => specifier !== 'react' && !specifier.startsWith('react/'),
+      neverBundle: (specifier: string) =>
+        specifier === 'react' || specifier.startsWith('react/') ||
+        specifier === 'react-dom' || specifier.startsWith('react-dom/') ||
+        specifier.startsWith('@deepseek-ai/'),
+      alwaysBundle: (specifier: string) =>
+        specifier !== 'react' && !specifier.startsWith('react/') &&
+        specifier !== 'react-dom' && !specifier.startsWith('react-dom/') &&
+        !specifier.startsWith('@deepseek-ai/'),
     },
     outputOptions: {
       entryFileNames: 'client.js',
