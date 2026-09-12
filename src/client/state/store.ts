@@ -22,6 +22,12 @@ export interface TreeState {
   selectedPaths: Set<string>
   renamingPath: string
   selectionAnchor: string | null
+  /**
+   * Inline "new file / new folder" row (Explorer style): the directory the item
+   * is created in ('' = workspace root) and what kind of item it is. Null when
+   * no create row is open.
+   */
+  creating: { type: 'file' | 'dir'; dir: string } | null
 }
 
 export interface SearchState {
@@ -190,6 +196,7 @@ export function createInitialState(): AppState {
       selectedPaths: new Set<string>(),
       renamingPath: '',
       selectionAnchor: null,
+      creating: null,
     },
     search: {
       searchQuery: '',

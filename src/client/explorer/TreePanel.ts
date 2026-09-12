@@ -43,6 +43,9 @@ export interface TreeActions {
   refresh(): void
   renameCommit(value: string): void
   renameCancel(): void
+  /** Commit / cancel the inline "new file / new folder" row. */
+  createCommit(value: string): void
+  createCancel(): void
   dragStart(path: string): void
   dragOver(path: string): void
   drop(path: string, e: { preventDefault(): void; stopPropagation(): void }): void
@@ -54,6 +57,39 @@ export interface TreePanelProps {
   tree: TreeState
   clipboard: ClipboardState
   actions: TreeActions
+}
+
+/**
+ * The inline "new file / new folder" row (Explorer style): a normal tree row
+ * whose name is an input, rendered as the first child of the target directory.
+ */
+function CreateRow({ type, depth, actions }: {
+  type: 'file' | 'dir'
+  depth: number
+  actions: TreeActions
+}): ReactNode {
+  const isDir = type === 'dir'
+  return h('div', { className: 'sol-exp-tree-node-wrapper' },
+    h('div', {
+      className: 'sol-exp-tree-node sol-exp-creating',
+      style: { paddingLeft: 12 + depth * 16 },
+      onClick: (e) => e.stopPropagation(),
+    },
+      h('span', { className: 'sol-exp-file-icon' },
+        isDir ? h(IconFolderClose16, { size: 16 }) : h(FileTypeIcon, { path: '', size: 16 })),
+      h('input', {
+        className: 'sol-exp-rename-input',
+        placeholder: isDir ? t('tree.newDirName') : t('tree.newFileName'),
+        autoFocus: true,
+        onClick: (e) => e.stopPropagation(),
+        onKeyDown: (e) => {
+          if (e.key === 'Enter') actions.createCommit(e.currentTarget.value)
+          else if (e.key === 'Escape') actions.createCancel()
+        },
+        onBlur: (e) => actions.createCommit(e.currentTarget.value),
+      }),
+    ),
+  )
 }
 
 /** One row plus its expanded children. */
@@ -69,7 +105,6 @@ function TreeNode({ node, depth, tree, clipboard, actions }: {
   const isSelected = tree.selectedPaths.has(node.path)
   const isCut = clipboard.clipboard?.mode === 'cut' && clipboard.clipboard.paths.includes(node.path)
   const isDropTarget = isDir && clipboard.dropTargetPath === node.path && clipboard.dragPaths.length > 0
-  const hasChildren = isDir && (node.children?.length ?? 0) > 0
 
   const rowClass = [
     'sol-exp-tree-node',
@@ -124,9 +159,12 @@ function TreeNode({ node, depth, tree, clipboard, actions }: {
         : h('span', { className: 'sol-exp-file-name' + (gitCls ? ' sol-exp-git-' + gitCls : '') }, node.name),
       node.gitStatus ? h('span', { className: 'sol-exp-git-letter sol-exp-git-' + gitCls }, node.gitStatus) : null,
     ),
-    isDir && isExpanded && hasChildren
+    isDir && isExpanded
       ? h('div', { className: 'sol-exp-tree-children' },
-          node.children!.map(child => h(TreeNode, {
+          tree.creating && tree.creating.dir === node.path
+            ? h(CreateRow, { type: tree.creating.type, depth: depth + 1, actions })
+            : null,
+          (node.children ?? []).map(child => h(TreeNode, {
             key: child.path, node: child, depth: depth + 1, tree, clipboard, actions,
           })))
       : null,
@@ -151,6 +189,9 @@ export function TreePanel({ root, tree, clipboard, actions }: TreePanelProps): R
       onDragOver: (e) => e.preventDefault(),
       onDrop: (e) => actions.drop('', e),
     },
+      tree.creating && tree.creating.dir === ''
+        ? h(CreateRow, { type: tree.creating.type, depth: 0, actions })
+        : null,
       (tree.treeState.children ?? []).map((child: TreeNodeData) => h(TreeNode, {
         key: child.path, node: child, depth: 0, tree, clipboard, actions,
       })))

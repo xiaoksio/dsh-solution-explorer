@@ -81,6 +81,8 @@ export function mountPanel(ctx: ClientContext): void {
 						newDir: () => { void commands.new?.("dir", "") },
 						refresh: () => { commands.refresh?.() },
 						renameCommit: (value) => { void commands.renameCommit?.(value) },
+						createCommit: (value) => { void commands.createCommit?.(value) },
+						createCancel: () => { commands.createCancel?.() },
 						renameCancel: () => { commands.renameCancel?.() },
 						dragStart: (path) => { commands.dragStart?.(path) },
 						dragOver: (path) => { commands.dragOver?.(path, undefined as unknown as DragEvent) },

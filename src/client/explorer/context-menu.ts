@@ -6,7 +6,7 @@
 
 import { t } from "../locales.ts"
 
-import { showToast, showConfirm, showPrompt } from "../shared/ui.ts"
+import { showToast, showConfirm } from "../shared/ui.ts"
 
 
 import type { AppState } from "../state/store.ts"
@@ -22,6 +22,32 @@ export interface ContextMenuDeps {
 
 export function registerContextMenuCommands(deps: ContextMenuDeps): () => void {
   const { state, render } = deps
+
+  /** Look a node up in the loaded tree by path. */
+  const findNode = (node: any, path: string): any => {
+    if (!node) return null;
+    if (node.path === path) return node;
+    for (const child of node.children ?? []) {
+      const hit = findNode(child, path);
+      if (hit) return hit;
+    }
+    return null;
+  };
+
+  /**
+   * Where a toolbar-initiated create lands: the selected directory, the selected
+   * file's parent, or the workspace root ('').
+   */
+  const selectedDir = (): string => {
+    const first = [...state.tree.selectedPaths][0] ?? state.tree.selectedPath ?? "";
+    if (!first) return "";
+    const path = String(first).replace(/\\/g, "/");
+    const node = findNode(state.tree.treeState, path);
+    if (node && node.type === "directory") return path;
+    const parts = path.split("/");
+    parts.pop();
+    return parts.join("/");
+  };
 
   // Command for the host open-native route: open a workspace path with its
   // owning system program (reveal folder / default app / open-with picker /
@@ -49,16 +75,37 @@ export function registerContextMenuCommands(deps: ContextMenuDeps): () => void {
   };
   document.addEventListener("click", hideContextMenu);
 
-  commands.new = async (type, dir) => {
+  /**
+   * Open the inline "new file / new folder" row (Explorer style) instead of a
+   * dialog: the tree renders an editable row inside `dir` ('' = root). Without
+   * an explicit directory (the toolbar buttons) the row lands in the selected
+   * directory, or next to the selected file.
+   */
+  commands.new = (type, dir) => {
     if (!state.root) return;
-    const zh = document.documentElement.lang?.startsWith("zh");
-    const name = await showPrompt({
-      title: type === "file" ? (zh ? "新建文件" : "New file") : (zh ? "新建文件夹" : "New folder"),
-      message: type === "file" ? (zh ? "输入文件名" : "Enter file name") : (zh ? "输入文件夹名" : "Enter folder name")
-    });
-    if (!name || !name.trim()) return;
-    const clean = name.trim();
-    const rel = dir ? dir.replace(/\\/g, "/") + "/" + clean : clean;
+    const target = dir ? dir.replace(/\\/g, "/") : selectedDir();
+    state.tree.creating = { type, dir: target };
+    if (target !== "") {
+      state.tree.expandedPaths.add(target);
+      render();
+      // Materialize the target directory's children so the row has a place to
+      // live (an empty directory has no children of its own).
+      void refreshTreeSilent(deps);
+      return;
+    }
+    render();
+  };
+
+  /** Commit the inline create row: create the typed name and refresh the tree. */
+  commands.createCommit = async (rawName) => {
+    const creating = state.tree.creating;
+    if (!creating) return;
+    const clean = String(rawName ?? "").trim();
+    if (clean === "") {
+      commands.createCancel();
+      return;
+    }
+    const rel = creating.dir ? creating.dir + "/" + clean : clean;
     try {
       const result = await (await fetch("/solution-explorer/create", {
         method: "POST",
@@ -66,18 +113,26 @@ export function registerContextMenuCommands(deps: ContextMenuDeps): () => void {
         body: JSON.stringify({
           root: state.root,
           path: rel,
-          type
+          type: creating.type
         })
       })).json();
       if (!result.ok) {
+        // Keep the row open so the name can be fixed.
         showToast("创建失败: " + (result.error?.message || ""), true);
         return;
       }
+      state.tree.creating = null;
       loadTree(deps);
-      deps.loadGitStatus?.();
+      deps.loadGitStatus?.(deps);
     } catch (err) {
       showToast("创建失败: " + (err.message || String(err)), true);
     }
+  };
+
+  commands.createCancel = () => {
+    if (!state.tree.creating) return;
+    state.tree.creating = null;
+    render();
   };
 
   commands.panelContextMenu = (evt) => {
@@ -213,7 +268,7 @@ export function registerContextMenuCommands(deps: ContextMenuDeps): () => void {
     // loading flash, no full-panel rebuild.
     if (state.tree.treeState) refreshTreeSilent(deps);
     else loadTree(deps);
-    deps.loadGitStatus?.();
+    deps.loadGitStatus?.(deps);
   };
 
   commands.deleteFile = async (target) => {
@@ -223,6 +278,8 @@ export function registerContextMenuCommands(deps: ContextMenuDeps): () => void {
   return () => {
     document.removeEventListener("click", hideContextMenu);
     delete commands.new;
+    delete commands.createCommit;
+    delete commands.createCancel;
     delete commands.openNative;
     delete commands.panelContextMenu;
     delete commands.contextMenu;
