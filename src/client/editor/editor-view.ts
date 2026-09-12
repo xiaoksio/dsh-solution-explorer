@@ -302,11 +302,6 @@ function EditorBody({ zoom, setZoom }: { zoom: number; setZoom: (value: number |
 
 			if (dstate && dstate.diffPath) {
 
-				// Dirty/saving belong to the active diff tab, not to this component.
-				const diffDirty = dstate.diffDirty === true;
-
-				const diffSaving = dstate.diffSaving === true;
-
 				if (dstate.diffLoading) return h("div", { style: {
 
 					padding: "16px",
@@ -732,52 +727,6 @@ commands.setActiveDiffState?.({ dirty: false });
 
 				} }, h("div", { style: {
 
-					display: "flex",
-
-					alignItems: "center",
-
-					justifyContent: "space-between",
-
-					padding: "6px 12px",
-
-					borderBottom: "1px solid var(--dsw-alias-border-l1)",
-
-					fontSize: "12px"
-
-				} }, h("span", { style: { color: "var(--dsw-alias-label-secondary)" } }, dstate.diffPath + (dstate.diffStaged ? "（已暂存）" : "")), h("span", { style: {
-
-					display: "flex",
-
-					gap: "12px",
-
-					alignItems: "center"
-
-				} }, h("span", { style: { color: "#f14c4c" } }, document.documentElement.lang?.startsWith("zh") ? "变更前" : "Before"), h("span", { style: { color: "#4ec9b0" } }, document.documentElement.lang?.startsWith("zh") ? "变更后" : "After"), !editable ? h("span", { style: {
-
-					color: "var(--dsw-alias-label-tertiary)",
-
-					fontSize: "11px"
-
-				} }, "已暂存只读") : diffSaving ? h("span", { style: {
-
-					color: "var(--dsw-alias-label-secondary)",
-
-					fontSize: "11px"
-
-				} }, "保存中...") : diffDirty ? h("span", { style: {
-
-					color: "#e2b714",
-
-					fontSize: "11px"
-
-				} }, "未保存的更改") : h("span", { style: {
-
-					color: "#4ec9b0",
-
-					fontSize: "11px"
-
-				} }, "已保存"))), h("div", { style: {
-
 					flex: 1,
 
 					overflow: "auto",
@@ -1197,6 +1146,8 @@ export function EditorView() {
 							kind: strip.activeKind,
 
 							status: strip.activeStatus,
+
+							diff: strip.activeDiff,
 
 							zoom: strip.activeKind === "image"
 								? {

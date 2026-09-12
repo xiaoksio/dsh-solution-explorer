@@ -202,12 +202,17 @@ export function registerEditorCommands(deps: EditorCommandsDeps): () => void {
         : tab.kind === "diff" ? "diff"
           : tab.image ? "image"
             : langFromPath(tab.path) ? "code" : "text",
-      // The strip carries what the old per-file info bar showed for a file: its
-      // save state. Only a loaded text buffer has one — images, unsupported
-      // files and diff tabs (which keep their own toolbar) report null.
+      // The info bar carries what the old per-file info bar showed for a file:
+      // its save state. Only a loaded text buffer has one — images, unsupported
+      // files and diff tabs (which report their own state below) return null.
       activeStatus: tab === null || tab.kind !== "file" || tab.image || tab.unsupported || tab.content === null
         ? null
         : tab.saving ? "saving" : tab.dirty ? "dirty" : "saved",
+      // A diff tab shows its before/after legend and save state in the same info
+      // row, so the diff view no longer needs a toolbar row of its own.
+      activeDiff: tab === null || tab.kind !== "diff"
+        ? null
+        : { readonly: tab.staged === true, dirty: tab.dirty, saving: tab.saving },
     };
   };
 

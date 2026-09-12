@@ -280,6 +280,13 @@ export const STYLES = `
 .sol-exp-einfo-path { min-width:0; color:var(--dsw-alias-label-secondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
 .sol-exp-einfo-kind { flex:none; color:var(--dsw-alias-label-tertiary); white-space:nowrap; }
+/* Diff tabs keep their before/after legend and save state in the info row
+   instead of a toolbar row of their own. */
+.sol-exp-einfo-diff { display:inline-flex; align-items:center; gap:10px; }
+
+.sol-exp-einfo-before { color:#f14c4c; }
+
+.sol-exp-einfo-after { color:#4ec9b0; }
 
 .sol-exp-einfo-right { margin-left:auto; flex:none; display:flex; align-items:center; gap:6px; }
 

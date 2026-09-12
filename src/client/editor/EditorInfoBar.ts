@@ -37,13 +37,26 @@ export interface EditorInfoBarProps {
   kind: EditorKind
   status?: EditorTabStatus | null
   zoom?: EditorZoomControls | null
+  /** Diff tabs: before/after legend plus the diff's own save state. */
+  diff?: { readonly: boolean; dirty: boolean; saving: boolean } | null
 }
 
 /** Full path (left) plus the active tab's state controls (right). */
-export function EditorInfoBar({ path, kind, status, zoom }: EditorInfoBarProps): ReactNode {
+export function EditorInfoBar({ path, kind, status, zoom, diff }: EditorInfoBarProps): ReactNode {
   return h('div', { className: 'sol-exp-einfo' },
     h('span', { className: 'sol-exp-einfo-path', title: path }, path),
     h('span', { className: 'sol-exp-einfo-right' },
+      diff
+        ? h('span', { className: 'sol-exp-einfo-diff' },
+            h('span', { className: 'sol-exp-einfo-before' }, t('editor.diff.before')),
+            h('span', { className: 'sol-exp-einfo-after' }, t('editor.diff.after')),
+            h('span', {
+              className: 'sol-exp-einfo-status ' + (diff.readonly ? 'saved' : diff.saving ? 'saving' : diff.dirty ? 'dirty' : 'saved'),
+            }, diff.readonly
+              ? t('editor.diff.stagedReadonly')
+              : diff.saving ? t('editor.saving') : diff.dirty ? t('editor.dirty') : t('editor.saved')),
+          )
+        : null,
       zoom
         ? h('span', { className: 'sol-exp-einfo-zoom' },
             h('button', { type: 'button', className: 'sol-exp-editor-btn', title: t('editor.zoomOut'), onClick: () => zoom.onOut() }, '−'),
