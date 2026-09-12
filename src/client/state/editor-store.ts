@@ -35,6 +35,38 @@ export interface EditorTab {
   diffNewContent?: string
   /** Workspace root the tab was opened in. */
   root: string
+  /**
+   * Tabs whose file has a renderer: whether the rendered form replaces the
+   * source editor. Undefined for every other file, so the info row offers no
+   * toggle for them.
+   */
+  preview?: boolean
+}
+
+/** How a file is rendered in preview mode, or null when it has no renderer. */
+export type PreviewKind = 'markdown' | 'html' | 'pdf'
+
+/**
+ * Whether a renderer leaves anything to edit as source. A PDF is bytes: it has
+ * a rendered form and nothing else, so its info row draws no source toggle.
+ * @param kind - the renderer in force.
+ * @returns true when the source editor is a meaningful alternative.
+ */
+export function previewHasSource(kind: PreviewKind | null): boolean {
+  return kind === 'markdown' || kind === 'html'
+}
+
+/**
+ * The renderer a path has here, by its last extension.
+ * @param path - a workspace-relative path.
+ * @returns the renderer, or null for a file this plugin only edits as source.
+ */
+export function previewKindOf(path: string): PreviewKind | null {
+  const normalized = path.replace(/\\/g, '/')
+  if (/\.(?:md|markdown)$/i.test(normalized)) return 'markdown'
+  if (/\.(?:html?)$/i.test(normalized)) return 'html'
+  if (/\.pdf$/i.test(normalized)) return 'pdf'
+  return null
 }
 
 export const editorStore = {
@@ -72,6 +104,10 @@ export function makeTab(kind: EditorTabKind, path: string, staged: boolean, root
     dirty: false,
     saving: false,
     root,
+    // A file with a renderer opens as its rendered form — the Sidebar's own
+    // document preview is what the file-link call sites expect — and the info
+    // row's toggle switches it to the source editor.
+    preview: kind === 'file' && previewKindOf(path) !== null ? true : undefined,
   }
 }
 

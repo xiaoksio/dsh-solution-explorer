@@ -4,15 +4,17 @@
  * @module dsh-solution-explorer/client/editor/editor-commands
  */
 
-import { activeTab, editorStore, ensureTab, findTab, notifyEditorListeners, removeTab, type EditorTab } from "../state/editor-store.ts"
+import { activeTab, editorStore, ensureTab, findTab, notifyEditorListeners, previewHasSource, previewKindOf, removeTab, type EditorTab } from "../state/editor-store.ts"
 
-import { gitRoot, type AppState } from "../state/store.ts"
+import { type AppState, gitRoot } from "../state/store.ts"
+import type { PreviewKind } from "../state/editor-store.ts"
 
 import { showToast, showConfirm } from "../shared/ui.ts"
 
 import { t } from "../locales.ts"
 
 import { loadTree } from "../explorer/tree-render.ts"
+import { isPreviewOnlyFile } from "../explorer/file-kind.ts"
 import { langFromPath } from "../highlight.ts"
 import { commands } from '../commands.ts'
 
@@ -30,6 +32,15 @@ function absolutePath(root: string, rel: string): string {
   const sep = base.includes("\\") ? "\\" : "/";
   const tail = rel.replace(/[\\/]+/g, sep).replace(sep === "\\" ? /^\\+/ : /^\/+/, "");
   return base + sep + tail;
+}
+
+/** Whether the active tab renders its file instead of showing its source. */
+function previewState(tab: EditorTab | null): { renderer: PreviewKind | null; preview: boolean } {
+
+  const renderer = tab !== null && tab.kind === "file" ? previewKindOf(tab.path) : null;
+
+  return { renderer, preview: renderer !== null && tab!.preview === true };
+
 }
 
 /** Bring the editor view forward in the host's own view tabs. */
@@ -108,6 +119,9 @@ export function registerEditorCommands(deps: EditorCommandsDeps): () => void {
   };
 
   commands.openDiff = async (path, staged) => {
+    // A preview-only file has no text to diff; its rendered form is the whole
+    // answer, wherever the request came from.
+    if (isPreviewOnlyFile(path)) { await commands.openFile?.(path); return; }
     const { tab, created } = ensureTab("diff", path, staged === true, state.root);
     notifyEditorListeners();
     if (created) await loadDiffTab(tab);
@@ -201,7 +215,7 @@ export function registerEditorCommands(deps: EditorCommandsDeps): () => void {
         ? null
         : tab.kind === "diff" ? "diff"
           : tab.image ? "image"
-            : langFromPath(tab.path) ? "code" : "text",
+            : previewState(tab).renderer ?? (langFromPath(tab.path) ? "code" : "text"),
       // The info bar carries what the old per-file info bar showed for a file:
       // its save state. Only a loaded text buffer has one — images, unsupported
       // files and diff tabs (which report their own state below) return null.
@@ -213,7 +227,28 @@ export function registerEditorCommands(deps: EditorCommandsDeps): () => void {
       activeDiff: tab === null || tab.kind !== "diff"
         ? null
         : { readonly: tab.staged === true, dirty: tab.dirty, saving: tab.saving },
+      // A rendered tab whose file also has editable source offers the
+      // preview/source toggle; every other tab returns null and draws none.
+      activeRenderer: previewState(tab).renderer,
+      activePreview: previewState(tab).preview,
+      activePreviewToggle: previewHasSource(previewState(tab).renderer),
     };
+  };
+
+  /**
+   * Show the active tab as its rendered form or as its source.
+   * @param preview - true for the rendered document, false for the editor.
+   */
+  commands.setTabPreview = (preview) => {
+
+    const tab = activeTab();
+
+    if (tab === null || tab.kind !== "file" || !previewHasSource(previewKindOf(tab.path))) return;
+
+    tab.preview = preview === true;
+
+    notifyEditorListeners();
+
   };
 
   commands.getEditorState = () => {
@@ -228,9 +263,12 @@ export function registerEditorCommands(deps: EditorCommandsDeps): () => void {
         editorUnsupported: false,
         editorImage: false,
         editorRoot: "",
-        editorDirty: false
+        editorDirty: false,
+        editorRenderer: null,
+        editorPreview: false
       };
     }
+    const rendered = previewState(tab);
     return {
       editorFile: tab.path,
       editorContent: tab.content,
@@ -240,7 +278,9 @@ export function registerEditorCommands(deps: EditorCommandsDeps): () => void {
       editorUnsupported: tab.unsupported,
       editorImage: tab.image,
       editorRoot: tab.root,
-      editorDirty: tab.dirty
+      editorDirty: tab.dirty,
+      editorRenderer: rendered.renderer,
+      editorPreview: rendered.preview
     };
   };
 
@@ -275,6 +315,7 @@ export function registerEditorCommands(deps: EditorCommandsDeps): () => void {
 
   return () => {
     delete commands.openFile;
+    delete commands.setTabPreview;
     delete commands.openDiff;
     delete commands.activateTab;
     delete commands.closeTab;

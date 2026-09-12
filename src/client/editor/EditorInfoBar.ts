@@ -22,7 +22,7 @@ export interface EditorZoomControls {
 }
 
 /** What the active tab holds; drives the right-hand label. */
-export type EditorKind = 'image' | 'code' | 'text' | 'diff'
+export type EditorKind = 'image' | 'code' | 'text' | 'diff' | 'markdown' | 'html' | 'pdf'
 
 /** Kind → locale key (spelled out so `t` keeps its key checking). */
 const KIND_KEY: Record<EditorKind, SolutionExplorerKey> = {
@@ -30,6 +30,9 @@ const KIND_KEY: Record<EditorKind, SolutionExplorerKey> = {
   code: 'editor.kind.code',
   text: 'editor.kind.text',
   diff: 'editor.kind.diff',
+  markdown: 'editor.kind.markdown',
+  html: 'editor.kind.html',
+  pdf: 'editor.kind.pdf',
 }
 
 export interface EditorInfoBarProps {
@@ -39,13 +42,31 @@ export interface EditorInfoBarProps {
   zoom?: EditorZoomControls | null
   /** Diff tabs: before/after legend plus the diff's own save state. */
   diff?: { readonly: boolean; dirty: boolean; saving: boolean } | null
+  /** Markdown tabs: the preview/source switch. */
+  md?: { readonly preview: boolean; onToggle(preview: boolean): void } | null
 }
 
 /** Full path (left) plus the active tab's state controls (right). */
-export function EditorInfoBar({ path, kind, status, zoom, diff }: EditorInfoBarProps): ReactNode {
+export function EditorInfoBar({ path, kind, status, zoom, diff, md }: EditorInfoBarProps): ReactNode {
   return h('div', { className: 'sol-exp-einfo' },
     h('span', { className: 'sol-exp-einfo-path', title: path }, path),
     h('span', { className: 'sol-exp-einfo-right' },
+      md
+        ? h('span', { className: 'sol-exp-einfo-md' },
+            h('button', {
+              type: 'button',
+              className: 'sol-exp-editor-btn' + (md.preview ? ' active' : ''),
+              title: t('editor.md.preview'),
+              onClick: () => md.onToggle(true),
+            }, t('editor.md.preview')),
+            h('button', {
+              type: 'button',
+              className: 'sol-exp-editor-btn' + (md.preview ? '' : ' active'),
+              title: t('editor.md.edit'),
+              onClick: () => md.onToggle(false),
+            }, t('editor.md.edit')),
+          )
+        : null,
       diff
         ? h('span', { className: 'sol-exp-einfo-diff' },
             h('span', { className: 'sol-exp-einfo-before' }, t('editor.diff.before')),

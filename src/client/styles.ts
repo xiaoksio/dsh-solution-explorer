@@ -296,6 +296,25 @@ export const STYLES = `
 
 .sol-exp-einfo-zoom-value { color:var(--dsw-alias-label-tertiary); font-size:11px; margin-left:4px; }
 
+/* Markdown preview: the document renderer's own scrollport. */
+.sol-exp-mdview { flex:1; min-height:0; overflow:auto; padding:12px 16px; color:var(--dsw-alias-label-primary); font-size:13px; line-height:1.6; }
+
+.sol-exp-mdview > :first-child { margin-top:0; }
+
+.sol-exp-einfo-md { flex:none; display:inline-flex; align-items:center; gap:2px; }
+
+/* HTML preview: the sandboxed frame fills the pane edge to edge. */
+.sol-exp-htmlview { flex:1; min-height:0; width:100%; border:0; display:block; }
+
+/* PDF preview: our own page stack. Dragging pans it, as it does an image. */
+.sol-exp-pdfview { flex:1; min-height:0; overflow:auto; scrollbar-gutter:stable; padding:12px; cursor:grab; }
+
+.sol-exp-pdfview:active { cursor:grabbing; }
+
+.sol-exp-pdfpage { display:flex; justify-content:center; margin:0 0 12px; }
+
+.sol-exp-pdfpage canvas { background:#fff; box-shadow:0 1px 5px rgba(0,0,0,.35); }
+
 .sol-exp-einfo-status.saving { color:var(--dsw-alias-label-secondary); }
 
 .sol-exp-einfo-status.dirty { color:#e2b714; }

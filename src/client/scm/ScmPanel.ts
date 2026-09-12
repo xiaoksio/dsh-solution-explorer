@@ -24,7 +24,7 @@ import {
   IconChevronRightOutline14,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { t } from '../locales.ts'
-import { isImageFile } from '../explorer/file-kind.ts'
+import { isPreviewOnlyFile } from '../explorer/file-kind.ts'
 import { CommitsList } from './CommitsList.ts'
 import type { ScmState, CommitState } from '../state/store.ts'
 
@@ -110,7 +110,7 @@ function ScmItem({ item, section, actions }: { item: ScmChange; section: string;
   const isDir = item.path.endsWith('/') || item.path.endsWith('\\')
   const open = () => {
     if (isDir) actions.selectFile(item.path, true)
-    else if (isImageFile(item.path)) void actions.openFile(item.path)
+    else if (isPreviewOnlyFile(item.path)) void actions.openFile(item.path)
     else void actions.openDiff(item.path, staged)
   }
   return h('div', { className: 'sol-exp-scm-item', title: t('file.open'), onClick: open },

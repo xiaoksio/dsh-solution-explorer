@@ -13,6 +13,9 @@ import { parseSideBySide } from "./diff-parse.ts"
 import { EditorTabs } from "./EditorTabs.ts"
 import type { EditorTabView } from "./EditorTabs.ts"
 import { EditorInfoBar } from "./EditorInfoBar.ts"
+import { MarkdownPreview } from "./MarkdownPreview.ts"
+import { HtmlPreview } from "./HtmlPreview.ts"
+import { PdfPreview } from "./PdfPreview.ts"
 import { commands } from '../commands.ts'
 
 /**
@@ -829,6 +832,26 @@ const getState = commands.getEditorState;
 
 			const editorRoot = st.editorRoot;
 
+			// A tab whose file has a renderer draws that renderer instead of the
+			// source editor; the info row's toggle switches back. A PDF carries no
+			// text to wait for — its frame reads the bytes itself. The caller
+			// already supplies the `.sol-exp-editor-body` box, whose bottom padding
+			// keeps content clear of the composer, so a renderer is returned as
+			// that box's own child: wrapping it again would inset it twice.
+			if (st.editorRenderer !== null && st.editorPreview === true && error === null
+				&& (st.editorRenderer === "pdf" || st.editorContent !== null)) {
+
+				return st.editorRenderer === "html"
+					? h(HtmlPreview, { root: editorRoot, path: file ?? "", text: st.editorContent ?? "" })
+					: st.editorRenderer === "pdf"
+						? h(PdfPreview, { root: editorRoot, path: file ?? "", zoom, onZoom: setZoom })
+						: h(MarkdownPreview, {
+							text: st.editorContent ?? "",
+							revision: document.documentElement.lang || "zh"
+						});
+
+			}
+
 
 
 
@@ -1149,7 +1172,14 @@ export function EditorView() {
 
 							diff: strip.activeDiff,
 
-							zoom: strip.activeKind === "image"
+							md: strip.activePreviewToggle === true
+								? {
+									preview: strip.activePreview === true,
+									onToggle: (preview: boolean) => { commands.setTabPreview?.(preview) },
+								}
+								: null,
+
+							zoom: strip.activeKind === "image" || strip.activeKind === "pdf"
 								? {
 									percent: Math.round(zoom * 100),
 									onIn: () => setZoom((z) => Math.min(10, +(z * 1.25).toFixed(2))),
