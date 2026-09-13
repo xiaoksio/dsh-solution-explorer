@@ -296,6 +296,11 @@ export const STYLES = `
 
 .sol-exp-einfo-zoom-value { color:var(--dsw-alias-label-tertiary); font-size:11px; margin-left:4px; }
 
+/* The editor's empty state: a muted glyph above the line that explains it. */
+.sol-exp-editor-empty { flex:1; min-height:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:16px; color:var(--dsw-alias-label-tertiary); font-size:12px; text-align:center; }
+
+.sol-exp-editor-empty svg { opacity:.45; }
+
 /* The Sidebar viewer tab's body, drawn only when a surface still holds this tab. */
 .sol-exp-viewer { flex:1; height:100%; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
 

@@ -1,5 +1,7 @@
 import { createElement as h, useCallback, useEffect, useRef, useState } from "react"
 
+import { IconEditOutline16 } from "@deepseek-ai/dsh-client-ui-primitives"
+
 import { t } from "../locales.ts"
 
 import { langFromPath, highlightToHtml, highlightLinesHtml } from "../highlight.ts"
@@ -869,15 +871,13 @@ const getState = commands.getEditorState;
 
 			}
 
-			if (!file) return h("div", { style: {
+			if (!file) return h("div", { className: "sol-exp-editor-empty" },
 
-				padding: "16px",
+				h(IconEditOutline16, { size: 28 }),
 
-				textAlign: "center",
+				h("span", null, t("editor.noFile")),
 
-				color: "var(--dsw-alias-label-tertiary)"
-
-			} }, t("editor.noFile"));
+			);
 
 			if (loading) return h("div", { style: {
 
