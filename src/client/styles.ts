@@ -222,7 +222,7 @@ export const STYLES = `
 
 .sol-exp-git-letter { flex:none; font-size:11px; font-weight:700; width:16px; text-align:center; margin-left:6px; }
 
-.sol-exp-context-menu { position:absolute; z-index:1000; min-width:140px; padding:4px; background:var(--dsw-alias-bg-overlay,var(--dsw-alias-bg-layer-3)); border:1px solid var(--dsw-alias-border-l2); border-radius:8px; box-shadow:0 4px 16px rgba(0,0,0,0.3); font-size:13px; color:var(--dsw-alias-label-primary); }
+.sol-exp-context-menu { position:fixed; z-index:1000; min-width:140px; max-height:calc(100vh - 16px); overflow-y:auto; padding:4px; background:var(--dsw-alias-bg-overlay,var(--dsw-alias-bg-layer-3)); border:1px solid var(--dsw-alias-border-l2); border-radius:8px; box-shadow:0 4px 16px rgba(0,0,0,0.3); font-size:13px; color:var(--dsw-alias-label-primary); }
 .sol-exp-modal-mask { position:fixed; inset:0; z-index:100000; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); backdrop-filter:blur(2px); animation:solExpModalFade .15s ease; }
 .sol-exp-modal-box { width:min(420px, calc(100vw - 48px)); background:var(--dsw-alias-bg-overlay); border:1px solid var(--dsw-alias-border-l2); border-radius:10px; box-shadow:0 12px 40px rgba(0,0,0,0.35); overflow:hidden; animation:solExpModalPop .16s ease; }
 .sol-exp-modal-title { padding:16px 16px 0; font-size:15px; font-weight:600; color:var(--dsw-alias-label-primary); }
