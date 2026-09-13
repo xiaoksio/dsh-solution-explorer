@@ -18,11 +18,33 @@ export async function readJsonBody(req: IncomingMessage): Promise<Record<string,
   })
 }
 
+/** The root's resolved spelling with no trailing separator, so containment compares like with like. */
+function trimRoot(root: string): string {
+  return pathModule.resolve(root).replace(/[\\/]+$/, '')
+}
+
 /** Strict containment: the resolved path must be inside the workspace root. */
 export function ensureInside(root: string, p: string): boolean {
-  const resolvedRoot = pathModule.resolve(root)
+  const base = trimRoot(root)
   const full = pathModule.resolve(root, p)
-  return full !== resolvedRoot && full.startsWith(resolvedRoot + pathModule.sep)
+  return full !== base && full.startsWith(base + pathModule.sep)
+}
+
+/**
+ * The file a read may open.
+ *
+ * A relative path must stay inside the workspace root, exactly as a write does. An
+ * absolute path names the file itself: the resource grammar's `absolute` scope and
+ * a Session's file references outside its workspace are legitimate reads, so the
+ * workspace fence does not apply to them. Writes are unaffected — every write route
+ * still goes through {@link ensureInside}.
+ * @param root - the workspace root the GUI asked through.
+ * @param file - the requested path, relative or absolute.
+ * @returns the path to read, or null when a relative path escapes the root.
+ */
+export function resolveReadTarget(root: string, file: string): string | null {
+  if (pathModule.isAbsolute(file)) return pathModule.resolve(file)
+  return ensureInside(root, file) ? pathModule.resolve(root, file) : null
 }
 
 /** Pick a non-colliding destination: append " copy" / " copy 2" while taken. */

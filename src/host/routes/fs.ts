@@ -2,7 +2,7 @@ import * as fsp from 'node:fs/promises'
 import * as pathModule from 'node:path'
 import { spawn } from 'node:child_process'
 
-import { json, ensureInside, autoRename, movePath } from '../http-util.ts'
+import { json, ensureInside, autoRename, movePath, resolveReadTarget } from '../http-util.ts'
 import { buildFileTree, searchFiles, IMAGE_EXT, imageMime } from '../tree.ts'
 import { getGitStatus, annotateGitStatus } from '../status.ts'
 import { normPath } from '../paths.ts'
@@ -55,11 +55,8 @@ export const fsGet: Record<string, Handler> = {
     const file = query.file || ''
     if (!root || !file) { json(res, { ok: false, error: { message: 'root and file required' } }); return }
     try {
-      const resolvedRoot = pathModule.resolve(root)
-      const fullPath = pathModule.resolve(root, file)
-      if (fullPath !== resolvedRoot && !fullPath.startsWith(resolvedRoot + pathModule.sep)) {
-        json(res, { ok: false, error: { message: 'path traversal denied' } }); return
-      }
+      const fullPath = resolveReadTarget(root, file)
+      if (fullPath === null) { json(res, { ok: false, error: { message: 'path traversal denied' } }); return }
       const stat = await fsp.stat(fullPath)
       // Image files are reported as image so the editor renders a
       // preview (served raw via /solution-explorer/raw) instead of
@@ -96,11 +93,8 @@ export const fsGet: Record<string, Handler> = {
     const file = query.file || ''
     if (!root || !file) { json(res, { ok: false, error: { message: 'root and file required' } }); return }
     try {
-      const resolvedRoot = pathModule.resolve(root)
-      const fullPath = pathModule.resolve(root, file)
-      if (fullPath !== resolvedRoot && !fullPath.startsWith(resolvedRoot + pathModule.sep)) {
-        json(res, { ok: false, error: { message: 'path traversal denied' } }); return
-      }
+      const fullPath = resolveReadTarget(root, file)
+      if (fullPath === null) { json(res, { ok: false, error: { message: 'path traversal denied' } }); return }
       const ext = pathModule.extname(fullPath).slice(1).toLowerCase()
       const buf = await fsp.readFile(fullPath)
       res.writeHead(200, { 'content-type': IMAGE_EXT.has(ext) ? imageMime(ext) : 'application/octet-stream', 'Cache-Control': 'no-store' })
