@@ -134,6 +134,16 @@ export function mountColumn({ state, render, applySettings }: GridDeps): void {
 
 					state.layout.panelCol.style.overflow = "hidden";
 
+					// Painted above the shipped right column, and below the shell's
+					// overlay layer. That column's panel is `position:absolute` with
+					// `z-index:10` and slides out of frame by transform; a claimed file
+					// open expands it for an instant before this plugin hands the file
+					// to its editor and closes it again, and the sliding panel would
+					// otherwise sweep across this column's pixels on the way.
+					state.layout.panelCol.style.position = "relative";
+
+					state.layout.panelCol.style.zIndex = "11";
+
 					state.layout.panelCol.style.display = "flex";
 
 					state.layout.panelCol.style.flexDirection = "column";
