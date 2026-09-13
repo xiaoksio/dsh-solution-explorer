@@ -110,6 +110,32 @@ export async function loadTree({ state, render }: Deps) {
 
 				}
 
+/**
+ * Whether two listings draw identically.
+ *
+ * Only the fields the tree renders are compared, and a missing `children` is not
+ * the same as an empty one: the tree reads "no children yet" as a directory whose
+ * listing still has to be fetched.
+ * @param left - the listing in state.
+ * @param right - the listing just fetched.
+ * @returns true when publishing the new listing would change nothing on screen.
+ */
+function sameListing(left: unknown, right: unknown): boolean {
+  if (left === right) return true;
+  if (left === null || right === null || typeof left !== "object" || typeof right !== "object") return false;
+  const a = left as Record<string, unknown>;
+  const b = right as Record<string, unknown>;
+  if (a.path !== b.path || a.name !== b.name || a.type !== b.type || a.gitStatus !== b.gitStatus) return false;
+  const aChildren = a.children as unknown[] | undefined;
+  const bChildren = b.children as unknown[] | undefined;
+  if (aChildren === undefined || bChildren === undefined) return aChildren === bChildren;
+  if (aChildren.length !== bChildren.length) return false;
+  for (let index = 0; index < aChildren.length; index += 1) {
+    if (!sameListing(aChildren[index], bChildren[index])) return false;
+  }
+  return true;
+}
+
 export async function refreshTreeSilent({ state, render }: Deps) {
 
 					if (!state.root || !state.tree.treeState) return;
@@ -123,6 +149,11 @@ export async function refreshTreeSilent({ state, render }: Deps) {
 						if (seq !== state.loadSeq || state.root === "") return;
 
 						if (result.ok && result.value) {
+
+							// Publish only a listing that draws differently: handing the
+							// panel a new object for an unchanged tree re-renders the
+							// whole view for nothing, which reads as a blink.
+							if (sameListing(state.tree.treeState, result.value)) return;
 
 							state.tree.treeState = result.value;
 
