@@ -23,10 +23,43 @@ export interface EditorCommandsDeps {
   render: () => void
   loadGitStatus?: (d: any) => Promise<void>
   actionsDeps?: any
+  /**
+   * Switch the panel to another workspace root, through the panel's own
+   * authoritative sequence. Used when a claimed file belongs to a Session whose
+   * workspace this panel is not showing.
+   */
+  switchRoot?: (root: string, keepWidth?: boolean) => void
 }
 
-/** Join a workspace root and a relative path with the platform separator. */
+/**
+ * Whether two spellings name the same workspace root.
+ *
+ * A claimed address carries the Session's own spelling of its working directory,
+ * which may differ from this panel's only in separator, drive-letter case, or a
+ * trailing separator. Comparing the raw strings would read that as a different
+ * workspace and reload the whole tree for it.
+ * @param left - one root spelling.
+ * @param right - the other.
+ * @returns true when both name the same directory.
+ */
+function sameRoot(left: string, right: string): boolean {
+  const normalized = (value: string): string => value.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
+  return normalized(left) === normalized(right);
+}
+
+/**
+ * Spell a tab's path for the info row.
+ *
+ * A tab's path is usually workspace-relative, but a claimed file reference can
+ * name an absolute path outside the workspace; joining that to the root would
+ * spell a path that exists nowhere.
+ * @param root - the workspace root the tab belongs to.
+ * @param rel - the tab's path, relative or absolute.
+ * @returns the path as the reader should see it.
+ */
 function absolutePath(root: string, rel: string): string {
+  const normalized = rel.replace(/\\/g, "/");
+  if (/^[A-Za-z]:\//.test(normalized) || normalized.startsWith("/")) return rel;
   const base = root.replace(/[\\/]+$/, "");
   if (base === "") return rel;
   const sep = base.includes("\\") ? "\\" : "/";
@@ -54,6 +87,66 @@ function focusEditorView(): void {
     }) as HTMLElement | null;
     if (tab) tab.click();
   }, 50);
+}
+
+/**
+ * Scroll the editor to a 1-based source line and put the caret at its start.
+ *
+ * Two obstacles shape this. The textarea is filled by the editor's own effect
+ * once the tab's content reaches the store, so the first attempts may run before
+ * there is anything to measure; and that same effect resets `scrollTop` on a tab
+ * change, which can land after a single pass. So the reveal retries until the
+ * content is there and applies once more after the repaint.
+ * @param line - a 1-based source line.
+ */
+function revealSourceLine(line: number): void {
+
+  const apply = (): boolean => {
+
+    const textarea = document.querySelector(".sol-exp-editor-body textarea") as HTMLTextAreaElement | null;
+
+    if (textarea === null || textarea.value === "") return false;
+
+    const style = getComputedStyle(textarea);
+
+    const lineHeight = parseFloat(style.lineHeight) || 21;
+
+    const padding = parseFloat(style.paddingTop) || 0;
+
+    const text = textarea.value;
+
+    // The start of line N is one past the newline that ends line N-1.
+    const caret = line > 1 ? Math.min(text.length, text.split("\n").slice(0, line - 1).join("\n").length + 1) : 0;
+
+    textarea.focus();
+
+    textarea.setSelectionRange(caret, caret);
+
+    textarea.scrollTop = Math.max(0, (line - 1) * lineHeight - padding);
+
+    return true;
+
+  };
+
+  const run = (attemptsLeft: number): void => {
+
+    if (apply()) {
+
+      // The first pass can land before the pages are laid out, where a
+      // zero-height textarea clamps `scrollTop` to 0; and a background tab
+      // suppresses `requestAnimationFrame`, so the follow-up passes are timers.
+      for (const delay of [120, 400]) setTimeout(() => { apply(); }, delay);
+
+      return;
+
+    }
+
+    if (attemptsLeft > 0) setTimeout(() => { run(attemptsLeft - 1); }, 40);
+
+  };
+
+  setTimeout(() => { run(12); }, 0);
+
 }
 
 export function registerEditorCommands(deps: EditorCommandsDeps): () => void {
@@ -111,12 +204,44 @@ export function registerEditorCommands(deps: EditorCommandsDeps): () => void {
     notifyEditorListeners();
   }
 
-  commands.openFile = async (path) => {
+  commands.openFile = async (path, options) => {
+
+    const focus = options?.focus !== false;
+
+    const root = typeof options?.root === "string" && options.root !== "" ? options.root : state.root;
+
+    if (!sameRoot(root, state.root)) {
+
+      // A claimed address can name a file of a Session whose workspace is not the
+      // one the panel shows. The panel's own root switch owns every fact that
+      // described the previous workspace — tree, expansion, selection, status,
+      // history — so the file follows it instead of a second, partial reset here.
+      // The width stays as it is: following a file must not resize the panel.
+      deps.switchRoot?.(root, true);
+
+    }
+
     const { tab, created } = ensureTab("file", path, false, state.root);
+
     notifyEditorListeners();
+
     if (created) await loadFileTab(tab);
-    focusEditorView();
+
+    if (focus) focusEditorView();
+
+    if (typeof options?.line === "number" && options.line > 0) revealSourceLine(options.line);
+
   };
+
+  /**
+   * The workspace root this panel is showing.
+   *
+   * The viewer's second root source: a Session's own working directory reaches the
+   * client asynchronously, and an address that arrives before it must still be read
+   * somewhere this plugin controls.
+   * @returns the panel's current root, or `''` before it knows one.
+   */
+  commands.getWorkspaceRoot = () => state.root;
 
   commands.openDiff = async (path, staged) => {
     // A preview-only file has no text to diff; its rendered form is the whole
@@ -175,6 +300,12 @@ export function registerEditorCommands(deps: EditorCommandsDeps): () => void {
   commands.saveFile = async () => {
     const tab = activeTab();
     if (tab === null || tab.kind !== "file" || tab.content === null) return;
+    // A claimed file may live outside the workspace root, where every write route
+    // refuses to go. Say so instead of reporting the refusal as a failed save.
+    if (/^(?:[A-Za-z]:[\\/]|[\\/])/.test(tab.path)) {
+      showToast(t("editor.saveOutsideWorkspace"), true);
+      return;
+    }
     tab.saving = true;
     notifyEditorListeners();
     let ok = false;
@@ -325,6 +456,7 @@ export function registerEditorCommands(deps: EditorCommandsDeps): () => void {
     delete commands.saveFile;
     delete commands.getEditorTabs;
     delete commands.getEditorState;
+    delete commands.getWorkspaceRoot;
     delete commands.editorListeners;
     delete commands.getDiffState;
     delete commands.setActiveDiffState;

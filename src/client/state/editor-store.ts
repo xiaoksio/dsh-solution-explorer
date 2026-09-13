@@ -14,7 +14,7 @@
 export type EditorTabKind = 'file' | 'diff'
 
 export interface EditorTab {
-  /** Stable identity: `file:<path>` or `diff:<path>:<staged>`. */
+  /** Stable identity: `file:<root>:<path>` or `diff:<root>:<path>:<staged>`. */
   id: string
   kind: EditorTabKind
   path: string
@@ -86,13 +86,27 @@ export function activeTab(): EditorTab | null {
   return findTab(editorStore.activeId)
 }
 
-export function tabId(kind: EditorTabKind, path: string, staged = false): string {
-  return kind === 'diff' ? `diff:${path}:${staged ? 'staged' : 'worktree'}` : `file:${path}`
+/**
+ * Stable identity: `file:<root>:<path>` or `diff:<root>:<path>:<staged>`.
+ *
+ * The workspace root is part of it because a relative path names different files
+ * in different workspaces: two Sessions may both hold `README.md`, and one tab
+ * must not stand for both.
+ * @param kind - editable file or git diff.
+ * @param path - workspace-relative or absolute path.
+ * @param root - the workspace root the path is read through.
+ * @param staged - diff tabs only: whether the staged side is shown.
+ * @returns the tab's identity.
+ */
+export function tabId(kind: EditorTabKind, path: string, root = '', staged = false): string {
+  return kind === 'diff'
+    ? `diff:${root}:${path}:${staged ? 'staged' : 'worktree'}`
+    : `file:${root}:${path}`
 }
 
 export function makeTab(kind: EditorTabKind, path: string, staged: boolean, root: string): EditorTab {
   return {
-    id: tabId(kind, path, staged),
+    id: tabId(kind, path, root, staged),
     kind,
     path,
     staged,
@@ -113,7 +127,7 @@ export function makeTab(kind: EditorTabKind, path: string, staged: boolean, root
 
 /** Activate an open tab, opening it first when it is not open yet. */
 export function ensureTab(kind: EditorTabKind, path: string, staged: boolean, root: string): { tab: EditorTab; created: boolean } {
-  const id = tabId(kind, path, staged)
+  const id = tabId(kind, path, root, staged)
   const existing = findTab(id)
   if (existing !== null) {
     editorStore.activeId = id

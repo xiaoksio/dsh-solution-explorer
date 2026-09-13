@@ -483,6 +483,25 @@ export function mountPanel(ctx: ClientContext): void {
 					// to its default (a "wrong direction" jump).
 					if (newRoot === state.root) return;
 
+					switchRoot(newRoot);
+
+				}
+
+				/**
+				 * Switch this panel to another workspace root.
+				 *
+				 * The authoritative sequence: a new root invalidates the tree, the
+				 * expansion and selection sets, the source-control status and the commit
+				 * history, because each of them described the previous workspace. The
+				 * width is the one part a caller may keep — following a file into
+				 * another workspace must not resize or close this panel.
+				 * @param newRoot - the workspace root to show.
+				 * @param keepWidth - true to leave the panel's width and open state alone.
+				 */
+				function switchRoot(newRoot: string, keepWidth = false): void {
+
+					if (!keepWidth) {
+
 					if (newRoot !== "") {
 						// Settings have not loaded yet: do not flash the panel
 						// open with defaults; mountColumn re-applies once ready.
@@ -502,6 +521,8 @@ export function mountPanel(ctx: ClientContext): void {
 					if (state.layout.panelWidth === 0) state.layout.panelCollapsed = false;
 
 					if (state.layout.panelFrame !== null) applyGrid(gridDeps);
+
+					}
 
 					state.root = newRoot;
 
@@ -561,7 +582,7 @@ export function mountPanel(ctx: ClientContext): void {
 				const actionsDeps = { state, render, loadRecentCommits };
 
 				// Editor commands deps: injected into editor/editor-commands.
-				const EditorCommandsDeps = { state, render, loadGitStatus, actionsDeps };
+				const EditorCommandsDeps = { state, render, loadGitStatus, actionsDeps, switchRoot };
 
 				// Branches deps: injected into scm/branches functions.
 				const branchesDeps = { state };

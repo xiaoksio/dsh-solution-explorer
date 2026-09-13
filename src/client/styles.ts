@@ -296,6 +296,9 @@ export const STYLES = `
 
 .sol-exp-einfo-zoom-value { color:var(--dsw-alias-label-tertiary); font-size:11px; margin-left:4px; }
 
+/* The Sidebar viewer tab's body, drawn only when a surface still holds this tab. */
+.sol-exp-viewer { flex:1; height:100%; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
+
 /* Markdown preview: the document renderer's own scrollport. */
 .sol-exp-mdview { flex:1; min-height:0; overflow:auto; padding:12px 16px; color:var(--dsw-alias-label-primary); font-size:13px; line-height:1.6; }
 

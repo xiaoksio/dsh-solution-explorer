@@ -30,6 +30,10 @@ import { SettingsPage } from './settings/settings-page.ts'
 
 import { mountPanel } from './panel.ts'
 
+import { commands } from './commands.ts'
+
+import { registerViewer } from './viewer/register.ts'
+
 
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -98,6 +102,28 @@ declare module '@deepseek-ai/dsh-client-ui-conversation/client' {
 				};
 
 			}, "dsh-solution-explorer: styles");
+
+			/**
+			 * The workspace root a claimed file is read through.
+			 *
+			 * The Session's own working directory when this client holds it,
+			 * otherwise the root this panel is showing: that directory arrives
+			 * asynchronously, and an address that beats it here must still be read
+			 * by this plugin rather than handed to another panel.
+			 */
+			const rootOf = (sessionId?: SessionId): string => {
+
+				const snapshot = ctx.sessions.list.getSnapshot();
+
+				const id = sessionId ?? snapshot.current;
+
+				const cwd = id === undefined ? "" : (snapshot.byId[id]?.cwd ?? "");
+
+				return cwd !== "" ? cwd : (commands.getWorkspaceRoot?.() ?? "");
+
+			};
+
+			registerViewer(ctx, rootOf);
 
 			mountPanel(ctx);
 
