@@ -161,9 +161,9 @@ export function registerContextMenuCommands(deps: ContextMenuDeps): () => void {
 
     addItem("新建文件", false, () => commands.new("file", base));
     addItem("新建文件夹", false, () => commands.new("dir", base));
-    // Intentional: reveal acts on the right-clicked folder only (single-object
+    // Reveal acts on the right-clicked path itself — a file or a folder (single-object
     // semantic), even when a multi-selection containing it is active.
-    if (isDir && target) addItem(t("context.reveal"), false, () => commands.openNative(target, "reveal"));
+    if (target) addItem(t("context.reveal"), false, () => commands.openNative(target, "reveal"));
 
     if (targets.length) {
       if (targets.length === 1) {

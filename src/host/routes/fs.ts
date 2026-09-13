@@ -115,17 +115,18 @@ export const fsGet: Record<string, Handler> = {
 }
 
 /**
- * Windows helper script for opening a folder in Explorer AND promoting the new
- * window to the foreground. A background host (no window of its own) has no
- * right to SetForegroundWindow, so a plain `explorer.exe <dir>` child may land
- * minimized/behind other windows depending on the foreground-lock race. This
- * script polls for the new Shell window, then attaches its thread input to the
- * current foreground thread (an ALT key pulse unlocks the foreground lock)
- * before calling SetForegroundWindow — measured 3/3 reliable on Win10/11.
- * Runs via `powershell -EncodedCommand` so the target path travels through an
- * environment variable: no quoting/escaping surface at all.
+ * Windows helper script for opening Explorer AND promoting the new window to the
+ * foreground. `SE_OPEN_MODE=select` selects the file at `SE_OPEN_TARGET` in its
+ * folder; any other mode opens the target itself as a folder. A background host
+ * (no window of its own) has no right to SetForegroundWindow, so a plain
+ * `explorer.exe <dir>` child may land minimized/behind other windows depending on
+ * the foreground-lock race. This script polls for the new Shell window, then
+ * attaches its thread input to the current foreground thread (an ALT key pulse
+ * unlocks the foreground lock) before calling SetForegroundWindow — measured 3/3
+ * reliable on Win10/11. Runs via `powershell -EncodedCommand` so the target path
+ * travels through an environment variable: no quoting/escaping surface at all.
  */
-const OPEN_FOLDER_FRONT_SCRIPT = [
+const OPEN_EXPLORER_FRONT_SCRIPT = [
   "$ErrorActionPreference = 'SilentlyContinue'",
   'Add-Type -TypeDefinition @"',
   'using System;using System.Runtime.InteropServices;',
@@ -139,7 +140,7 @@ const OPEN_FOLDER_FRONT_SCRIPT = [
   '[DllImport("user32.dll")] public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);',
   '}',
   '"@',
-  'Start-Process explorer.exe $env:SE_OPEN_TARGET',
+  'if ($env:SE_OPEN_MODE -eq \'select\') { Start-Process explorer.exe -ArgumentList (\'/select,"\' + $env:SE_OPEN_TARGET + \'"\') } else { Start-Process explorer.exe $env:SE_OPEN_TARGET }',
   '$s = New-Object -ComObject Shell.Application',
   '$known = @($s.Windows() | ForEach-Object { $_.HWND })',
   '$deadline = (Get-Date).AddSeconds(5)',
@@ -147,6 +148,13 @@ const OPEN_FOLDER_FRONT_SCRIPT = [
   'while ((Get-Date) -lt $deadline -and -not $w) {',
   '    Start-Sleep -Milliseconds 150',
   '    $w = @($s.Windows() | Where-Object { $_.FullName -like \'*explorer.exe\' -and $known -notcontains $_.HWND }) | Select-Object -Last 1',
+  '}',
+  'if (-not $w -and $env:SE_OPEN_MODE -eq \'select\') {',
+  '    # Explorer may have selected inside an already-open window instead of making',
+  '    # a new one; that window is the one to raise.',
+  '    $dir = (Split-Path -Parent $env:SE_OPEN_TARGET) -replace \'\\\\\', \'/\'',
+  '    $url = \'file:///\' + $dir',
+  '    $w = @($s.Windows() | Where-Object { $_.FullName -like \'*explorer.exe\' -and $_.LocationURL -eq $url }) | Select-Object -Last 1',
   '}',
   'if ($w) {',
   '    Start-Sleep -Milliseconds 250',
@@ -330,8 +338,8 @@ export const fsPost: Record<string, Handler> = {
     }
   },
   '/solution-explorer/open-native': async ({ res, payload, root }) => {
-    // Open a workspace path with its owning system program: reveal a folder in
-    // the file manager, open a file with its default association, let the user
+    // Open a workspace path with its owning system program: reveal a file or folder
+    // in the file manager, open a file with its default association, let the user
     // pick an association ("open with"), or show the properties dialog.
     const target = typeof payload.path === 'string' ? payload.path : ''
     const action = typeof payload.action === 'string' ? payload.action : ''
@@ -362,14 +370,24 @@ export const fsPost: Record<string, Handler> = {
         child.on('error', (err) => console.warn('[sol-exp] open-native spawn failed:', err.message))
         child.unref()
       }
-      if (action === 'reveal' || (action === 'open' && targetStat.isDirectory())) {
+      if (action === 'reveal' && !targetStat.isDirectory()) {
+        // Revealing a file selects it in the folder that holds it — the familiar
+        // "Reveal in File Explorer" gesture. Windows and macOS can select an entry;
+        // Linux has no select API, so its containing folder opens instead.
+        if (process.platform === 'win32') {
+          // Same foreground treatment as a folder: a plain `explorer /select,` child
+          // lands behind whatever holds focus, which reads as "nothing happened".
+          launchBackground('powershell.exe', ['-NoProfile', '-STA', '-EncodedCommand', Buffer.from(OPEN_EXPLORER_FRONT_SCRIPT, 'utf16le').toString('base64')], { SE_OPEN_TARGET: fullPath, SE_OPEN_MODE: 'select' })
+        } else if (process.platform === 'darwin') {
+          launchBackground('open', ['-R', fullPath])
+        } else {
+          launchBackground('xdg-open', [pathModule.dirname(fullPath)])
+        }
+      } else if (action === 'reveal' || (action === 'open' && targetStat.isDirectory())) {
         // Open the folder itself (its contents), never the parent-with-selection
         // behavior — that reads as "wrong folder opened" in the UI.
-        // The UI only sends reveal for directories; for a direct API call with
-        // a file, the reveal branch degrades to a plain open on every platform
-        // (win32 default association / darwin Finder selection / linux open).
         if (process.platform === 'win32') {
-          launchBackground('powershell.exe', ['-NoProfile', '-STA', '-EncodedCommand', Buffer.from(OPEN_FOLDER_FRONT_SCRIPT, 'utf16le').toString('base64')], { SE_OPEN_TARGET: fullPath })
+          launchBackground('powershell.exe', ['-NoProfile', '-STA', '-EncodedCommand', Buffer.from(OPEN_EXPLORER_FRONT_SCRIPT, 'utf16le').toString('base64')], { SE_OPEN_TARGET: fullPath })
         } else if (process.platform === 'darwin') {
           // Finder "Reveal": opens the enclosing window and selects the folder.
           launchBackground('open', ['-R', fullPath])
