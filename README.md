@@ -2,7 +2,7 @@
 
 # 🗂️ Solution Explorer for DSH
 
-**VS Code-style file explorer plus full source control for the DeepSeek Harness (DSH) Web GUI right sidebar.**
+**A drop-in replacement for the DSH Web GUI's right sidebar** — VS Code-style file explorer, a multi-tab editor with in-place previews, and full source control.
 
 [![npm](https://img.shields.io/npm/v/dsh-solution-explorer)](https://www.npmjs.com/package/dsh-solution-explorer)
 [![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
@@ -18,6 +18,10 @@
 
 ## Features
 
+- **Takes over the sidebar** — every file opened from the conversation, the
+  sidebar's own file list or source control lands in this plugin's editor view:
+  as long as this plugin can read a file, the shipped preview panel never takes
+  it over.
 - **File Explorer** — browse the current session workspace as a directory tree
   with expand/collapse, VS Code-style file-type icons (TS/JS/Vue/JSON/image/
   archive/script and 30+ more extensions), git status markers (M/A/D/R/?), names
@@ -50,10 +54,11 @@
   (TS/JS/Python/JSON/Markdown/...) with a GitHub Dark theme; the editor
   re-highlights live while typing, lightweight.
 - **File Search** — live name search across the workspace.
-- **File Editor** — open any text file in an "Edit" tab of the conversation
-  view, edit, and save (button or Ctrl+S); images open in an in-editor
-  preview with zoom/pan, and other binary files are detected and refused
-  instead of corrupted.
+- **File Editor** — a multi-tab editor in the conversation view's "Editor" tab:
+  open any text file, edit, and save (button or Ctrl+S). Images open in an
+  in-editor preview with zoom/pan; `.md`/`.markdown` and `.html` open in rendered
+  previews with a preview/source toggle; `.pdf` renders in place. Other binary
+  files are detected and refused instead of corrupted.
 - **Collapsible rail** — collapse the whole panel into a narrow icon rail
   (expand panel, explorer, search, source control, terminal). The source-control icon
   shows a live change-count badge; clicking an icon reopens the panel on that
@@ -146,7 +151,10 @@ The plugin is a single npm package with two halves, both declared in
   `lib/client.js`): loaded by the Web GUI's `__ModuleLoader__` as a
   closure-factory bundle. It appends the explorer column to the frame grid
   (`[data-dsh-frame]`), follows the active session's `cwd`, and mounts the
-  file editor into the `conversation.view` slot.
+  file editor into the `conversation.view` slot. A `sidebarRightTabs`
+  registration claims every `dsh-resource://file/**` address, so a file opened
+  anywhere in the GUI is handed to that editor view instead of the shipped
+  preview panel.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development conventions and how to
 submit the plugin to [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin).
