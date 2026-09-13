@@ -5,10 +5,15 @@
 **A drop-in replacement for the DSH Web GUI's right sidebar** — VS Code-style file explorer, a multi-tab editor with in-place previews, and full source control.
 
 [![npm](https://img.shields.io/npm/v/dsh-solution-explorer)](https://www.npmjs.com/package/dsh-solution-explorer)
+[![npm downloads](https://img.shields.io/npm/dm/dsh-solution-explorer)](https://www.npmjs.com/package/dsh-solution-explorer)
 [![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
 [![dshfind](https://dshfind.com/api/badge/xiaoksio/dsh-solution-explorer?lang=zh)](https://dshfind.com/zh/plugins/xiaoksio/dsh-solution-explorer?ref=badge)
 [![license](https://img.shields.io/github/license/xiaoksio/dsh-solution-explorer)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/xiaoksio/dsh-solution-explorer)](https://github.com/xiaoksio/dsh-solution-explorer)
+
+[![DSH](https://img.shields.io/badge/DSH-0.1.5--rc.1%2B-4d6bfe)](https://www.npmjs.com/package/@deepseek-ai/dsh?activeTab=versions)
+
+![File explorer + git status](https://img.shields.io/badge/-File_explorer_%2B_git_status-4d6bfe) ![Multi-tab editor](https://img.shields.io/badge/-Multi--tab_editor-4d6bfe) ![Previews](https://img.shields.io/badge/-Previews-4d6bfe) ![Diff](https://img.shields.io/badge/-Diff-4d6bfe) ![Commit graph](https://img.shields.io/badge/-Commit_graph-4d6bfe) ![Terminal](https://img.shields.io/badge/-Terminal-4d6bfe) ![Sidebar takeover](https://img.shields.io/badge/-Sidebar_takeover-4d6bfe)
 
 [English](README.md) · [简体中文](README.zh.md)
 
@@ -128,7 +133,7 @@ pnpm build    # tsc declarations + tsdown bundles (lib/index.js, lib/client.js)
 pnpm watch    # rebuild on change
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the submission guide.
+See [CONTRIBUTING.md](https://github.com/xiaoksio/dsh-solution-explorer/blob/main/CONTRIBUTING.md) for development conventions.
 
 `pnpm install` also runs the `prepare` script, so a git-based install
 (`dsh plugin add github:xiaoksio/dsh-solution-explorer`) builds `lib/` on
@@ -155,9 +160,6 @@ The plugin is a single npm package with two halves, both declared in
   registration claims every `dsh-resource://file/**` address, so a file opened
   anywhere in the GUI is handed to that editor view instead of the shipped
   preview panel.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development conventions and how to
-submit the plugin to [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin).
 
 ## License
 

@@ -5,10 +5,15 @@
 **DSH Web GUI 右侧边栏的完美平替** —— VS Code 风格文件浏览器、带就地预览的多标签编辑器，以及完整源代码管理。
 
 [![npm](https://img.shields.io/npm/v/dsh-solution-explorer)](https://www.npmjs.com/package/dsh-solution-explorer)
+[![npm 下载量](https://img.shields.io/npm/dm/dsh-solution-explorer)](https://www.npmjs.com/package/dsh-solution-explorer)
 [![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
 [![dshfind](https://dshfind.com/api/badge/xiaoksio/dsh-solution-explorer?lang=zh)](https://dshfind.com/zh/plugins/xiaoksio/dsh-solution-explorer?ref=badge)
 [![license](https://img.shields.io/github/license/xiaoksio/dsh-solution-explorer)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/xiaoksio/dsh-solution-explorer)](https://github.com/xiaoksio/dsh-solution-explorer)
+
+[![DSH 版本](https://img.shields.io/badge/DSH-0.1.5--rc.1%2B-4d6bfe)](https://www.npmjs.com/package/@deepseek-ai/dsh?activeTab=versions)
+
+![文件树 + git 标记](https://img.shields.io/badge/-文件树_%2B_git_标记-4d6bfe) ![多标签编辑器](https://img.shields.io/badge/-多标签编辑器-4d6bfe) ![就地预览](https://img.shields.io/badge/-Markdown%2FHTML%2FPDF_预览-4d6bfe) ![并排差异](https://img.shields.io/badge/-并排差异-4d6bfe) ![提交图](https://img.shields.io/badge/-提交图-4d6bfe) ![内置终端](https://img.shields.io/badge/-内置终端-4d6bfe) ![接管官方右栏](https://img.shields.io/badge/-接管官方右栏-4d6bfe)
 
 [English](README.md) · [简体中文](README.zh.md)
 
@@ -78,7 +83,7 @@ pnpm build    # tsc 产类型 + tsdown 打包（lib/index.js、lib/client.js）
 pnpm watch    # 改动自动重建
 ```
 
-收录提交指引见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+开发约定见 [CONTRIBUTING.md](https://github.com/xiaoksio/dsh-solution-explorer/blob/main/CONTRIBUTING.md)。
 
 `pnpm install` 也会执行 `prepare` 脚本，因此基于 git 的安装（`dsh plugin add github:xiaoksio/dsh-solution-explorer`）会在目标机器上自动构建 `lib/`，无需手动步骤。
 
@@ -88,8 +93,6 @@ pnpm watch    # 改动自动重建
 
 - **Host 半区**（`src/index.ts`，导出 `.` → `lib/index.js`）：运行在 dsh 宿主进程中，通过 `/solution-explorer/*` 下的 HTTP 路由提供工作区受限的文件系统与 git API（`tree`、`read`、`write`、`delete`、`search`、`git-repos`、`git-status`、`git-diff`、`git-log`、`git-stage`、`git-unstage`、`git-discard`、`git-commit`、`paste`、`move`、`upload`、`create`）。所有路由都把路径严格限制在会话工作区根目录内。它还会在系统提示词中宣告自身，让 agent 知道面板能做什么。
 - **浏览器半区**（`src/client/index.ts`，导出 `./client` → `lib/client.js`）：由 Web GUI 的 `__ModuleLoader__` 以闭包工厂 bundle 形式加载。它向框架网格追加资源管理器列（`[data-dsh-frame]`），跟随当前会话的 `cwd`，并把文件编辑器挂载到 `conversation.view` 槽位。同时向 `sidebarRightTabs` 注册认领全部 `dsh-resource://file/**` 地址，因此 GUI 中任何位置打开的文件都会交给该编辑器视图，而不是官方预览面板。
-
-开发约定与向 [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) 提交收录的指引见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## 许可证
 
