@@ -16,8 +16,7 @@ const zh = {
   'panel.empty': '打开工作区后显示文件',
   'panel.expand': '展开面板',
   'panel.collapse': '收起面板',
-  'panel.editor': '编辑',
-  'panel.editor.title': '编辑器',
+  'panel.editor': '编辑器',
   'panel.terminal': '终端',
 
   // File explorer
@@ -232,8 +231,7 @@ const en: Record<SolutionExplorerKey, string> = {
   'panel.empty': 'Open a workspace to browse files',
   'panel.expand': 'Expand panel',
   'panel.collapse': 'Collapse panel',
-  'panel.editor': 'Edit',
-  'panel.editor.title': 'Editor',
+  'panel.editor': 'Editor',
   'panel.terminal': 'Terminal',
 
   'file.search': 'Search files...',
