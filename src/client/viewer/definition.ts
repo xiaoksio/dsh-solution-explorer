@@ -3,7 +3,7 @@
  * @module dsh-solution-explorer/client/viewer/definition
  */
 
-import { addressBasename, parseFileAddress } from "./address.ts";
+import { addressBasename } from "./address.ts";
 
 /** This implementation's identity in the Sidebar's tab system. */
 export const VIEWER_ID = "dsh-solution-explorer/viewer";
@@ -36,12 +36,15 @@ export function viewerDefinition(): ViewerTabDefinition {
     // No `priority`: the registry defaults an unnamed band to `extension`, which
     // outranks every shipped type.
     //
-    // Nothing is vetoed. A veto looks like a safe fallback, but it moves the
-    // reader into a different panel the moment this plugin cannot name a
-    // workspace root — including the moment a Session's working directory has not
-    // reached the client yet — and this plugin can always say more about a file
-    // than a silent hand-off: it either shows the file or shows why it could not.
-    canOpen: (address) => parseFileAddress(address) !== undefined,
+    // Nothing is vetoed, and the pattern above is the whole gate: the registry
+    // consults `canOpen` only for types whose pattern matched, so every file
+    // address is claimed here. A veto is not a safe fallback — it hands the file
+    // to whichever panel registers next, which is a different surface with a
+    // different reader, and it fires exactly when this plugin is least ready (a
+    // Session's working directory, or its id, has not reached the client yet).
+    // Claiming always ends in this plugin's editor: the file, or the reason it
+    // could not be read.
+    canOpen: () => true,
     title: addressBasename,
   };
 }

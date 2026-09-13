@@ -113,12 +113,29 @@ export function ViewerBody({ useTabInfo, getRoot, closeTab }: ViewerBodyProps): 
     if (!fresh.current) return;
     fresh.current = false;
     remember(info.tab.id, revision);
-    if (target !== "" && target !== undefined) {
+    if (target === "") {
+      // The address named no path, so there is nothing to read; the tab still goes
+      // away, which returns the Sidebar to its collapsed state.
+    } else if (typeof commands.openFile === "function") {
       // Focused: the file is read in this plugin's editor view, and switching the
       // conversation's view ring has no public API — its selection lives in
       // ui-conversation's own session store — so the view is brought forward the
       // way a reader brings it forward.
-      void commands.openFile?.(target, { focus: true, root, line });
+      void commands.openFile(target, { focus: true, root, line });
+    } else {
+      // This plugin's editor registers its commands with the panel, which mounts
+      // after this registration; an open that beats it must still land, so the
+      // forward is retried for a few frames instead of being dropped.
+      let attempts = 0;
+      const forward = (): void => {
+        if (typeof commands.openFile === "function") {
+          void commands.openFile(target, { focus: true, root, line });
+          return;
+        }
+        if (attempts++ > 20) return;
+        setTimeout(forward, 50);
+      };
+      setTimeout(forward, 50);
     }
     queueMicrotask(() => { closeTab(info.tab.id); });
   }, [key, ref, relative, root, line, target, closeTab]);

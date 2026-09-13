@@ -33,36 +33,60 @@ function isAbsolute(path: string): boolean {
 }
 
 /**
+ * Decode one address segment.
+ *
+ * A malformed escape is the address's problem, not this reader's: the raw segment
+ * is a better answer than refusing the whole address and handing the file to
+ * another panel.
+ * @param segment - one percent-encoded segment.
+ * @returns the decoded segment, or the segment itself when it cannot be decoded.
+ */
+function decodeSegment(segment: string): string {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
+}
+
+/**
  * Read a `dsh-resource://file/...` address.
+ *
+ * Deliberately tolerant. Every shape that can name a file is read, including the
+ * ones the grammar allows but the writers rarely emit: a Session scope whose id
+ * has not been resolved yet (`session//<path>`, which the client itself produces
+ * while a session is still being picked), and any other scope, whose remainder is
+ * taken as the path. Refusing an address does not make it unopenable — it hands
+ * the file to whichever panel registers next — so only an address with no path at
+ * all comes back undefined.
  * @param address - a candidate address.
- * @returns its parts, or undefined for another type or a malformed escape.
+ * @returns its parts, or undefined when the address names no path.
  */
 export function parseFileAddress(address: string): FileRef | undefined {
-  try {
-    if (!address.startsWith(PREFIX)) return undefined;
-    const end = address.search(/[?#]/);
-    const [scope, ...rest] = address.slice(PREFIX.length, end === -1 ? undefined : end).split("/");
-    if (scope === "session") {
-      const [id, ...segments] = rest;
-      if (id === undefined || id === "" || segments.length === 0) return undefined;
-      const path = segments.map(decodeURIComponent).join("/");
-      if (path === "") return undefined;
-      return { sessionId: decodeURIComponent(id), path, absolute: isAbsolute(path) };
-    }
-    if (scope === "absolute") {
-      // An empty first segment with more behind it is a UNC path's `//`.
-      const unc = rest[0] === "" && rest.length > 1;
-      const segments = (unc ? rest.slice(1) : rest).map(decodeURIComponent);
-      if (segments.length === 0 || segments[0] === "") return undefined;
-      const joined = segments.join("/");
-      return { path: unc ? "//" + joined : isAbsolute(joined) ? joined : "/" + joined, absolute: true };
-    }
-    return undefined;
-  } catch {
-    // `decodeURIComponent` throws URIError on a malformed escape; the address is
-    // then not one this plugin can read.
-    return undefined;
+  const trimmed = address.trim();
+  if (trimmed.length < PREFIX.length || trimmed.slice(0, PREFIX.length).toLowerCase() !== PREFIX) return undefined;
+  const end = trimmed.search(/[?#]/);
+  const body = trimmed.slice(PREFIX.length, end === -1 ? undefined : end);
+  const [scope, ...rest] = body.split("/");
+  if (scope === "session") {
+    const [id, ...segments] = rest;
+    const path = segments.map(decodeSegment).join("/");
+    if (path === "") return undefined;
+    // An unresolved id stays undefined so the reader falls back to the workspace
+    // this panel shows rather than inventing a session.
+    return { sessionId: id === "" ? undefined : decodeSegment(id), path, absolute: isAbsolute(path) };
   }
+  if (scope === "absolute") {
+    // An empty first segment with more behind it is a UNC path's `//`.
+    const unc = rest[0] === "" && rest.length > 1;
+    const segments = (unc ? rest.slice(1) : rest).map(decodeSegment);
+    const joined = segments.join("/");
+    if (joined === "") return undefined;
+    return { path: unc ? "//" + joined : isAbsolute(joined) ? joined : "/" + joined, absolute: true };
+  }
+  // An unknown scope is read as the path itself: guessing beats deferring.
+  const path = [scope, ...rest].map(decodeSegment).join("/");
+  return path === "" ? undefined : { path, absolute: isAbsolute(path) };
 }
 
 /** The last path segment, for the tab chip's title. */
