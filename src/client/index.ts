@@ -34,6 +34,8 @@ import { commands } from './commands.ts'
 
 import { registerViewer } from './viewer/register.ts'
 
+import { mainViewSessionId } from './shared/session.ts'
+
 
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -115,7 +117,7 @@ declare module '@deepseek-ai/dsh-client-ui-conversation/client' {
 
 				const snapshot = ctx.sessions.list.getSnapshot();
 
-				const id = sessionId ?? snapshot.current;
+				const id = sessionId ?? mainViewSessionId(snapshot);
 
 				const cwd = id === undefined ? "" : (snapshot.byId[id]?.cwd ?? "");
 

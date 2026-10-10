@@ -9,6 +9,9 @@ import { commands } from "./commands.ts"
 import { setLanguage } from "./locales.ts"
 
 
+import { mainViewSessionId } from "./shared/session.ts"
+
+
 
 
 
@@ -471,7 +474,7 @@ export function mountPanel(ctx: ClientContext): void {
 
 					const snapshot = ctx.sessions.list.getSnapshot();
 
-					const sessionId = snapshot.current;
+					const sessionId = mainViewSessionId(snapshot);
 
 					const cwd = sessionId === void 0 ? void 0 : snapshot.byId[sessionId]?.cwd;
 
