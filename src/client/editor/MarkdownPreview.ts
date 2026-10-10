@@ -9,7 +9,9 @@
 
 import { createElement as h, useMemo, type ReactNode } from "react";
 
-import { MarkdownText, type MarkdownLabels } from "@deepseek-ai/dsh-client-ui-primitives";
+import { MarkdownText } from "../icons.ts";
+
+import type { MarkdownLabels } from "@deepseek-ai/dsh-client-ui-primitives";
 
 import { t } from "../locales.ts";
 

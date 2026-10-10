@@ -9,9 +9,9 @@ import { createElement as h } from 'react'
 import type { ReactNode } from 'react'
 import {
   FileTypeIcon,
-  IconBranchOutline16,
-  IconCloseOutline16,
-} from '@deepseek-ai/dsh-client-ui-primitives'
+  IconBranchOutline,
+  IconCloseOutline,
+} from '../icons.ts'
 import { t } from '../locales.ts'
 
 /** One open tab as the strip renders it. */
@@ -55,7 +55,7 @@ export function EditorTabs({ tabs, activeId, onActivate, onClose }: EditorTabsPr
         onClick: () => onActivate(tab.id),
       },
         h('span', { className: 'sol-exp-etab-icon' },
-          isDiff ? h(IconBranchOutline16, { size: 14 }) : h(FileTypeIcon, { path: tab.path, size: 14 })),
+          isDiff ? h(IconBranchOutline, { size: 14 }) : h(FileTypeIcon, { path: tab.path, size: 14 })),
         h('span', { className: 'sol-exp-etab-name' }, baseName(tab.path) + (isDiff ? ' (diff)' : '')),
         tab.dirty ? h('span', { className: 'sol-exp-etab-dot', title: t('editor.unsaved') }, '●') : null,
         h('button', {
@@ -63,7 +63,7 @@ export function EditorTabs({ tabs, activeId, onActivate, onClose }: EditorTabsPr
           className: 'sol-exp-etab-close',
           title: t('editor.tab.close'),
           onClick: (e) => { e.stopPropagation(); onClose(tab.id) },
-        }, h(IconCloseOutline16, { size: 12 })),
+        }, h(IconCloseOutline, { size: 12 })),
       )
     }),
   )

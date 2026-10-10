@@ -10,14 +10,14 @@ import { createElement as h, Fragment } from 'react'
 import type { ReactNode } from 'react'
 import {
   FileTypeIcon,
-  IconFolderOpen16,
-  IconFolderClose16,
-  IconRefreshOutline16,
-  IconChevronDownOutline14,
-  IconChevronUpOutline14,
-  IconPlusOutline16,
-  IconProjectAddOutline16,
-} from '@deepseek-ai/dsh-client-ui-primitives'
+  IconFolderOpen,
+  IconFolderClose,
+  IconRefreshOutline,
+  IconChevronDownOutline,
+  IconChevronUpOutline,
+  IconPlusOutline,
+  IconProjectAddOutline,
+} from '../icons.ts'
 import { t } from '../locales.ts'
 import { gitStatusClass } from './file-kind.ts'
 import type { TreeState, ClipboardState } from '../state/store.ts'
@@ -76,7 +76,7 @@ function CreateRow({ type, depth, actions }: {
       onClick: (e) => e.stopPropagation(),
     },
       h('span', { className: 'sol-exp-file-icon' },
-        isDir ? h(IconFolderClose16, { size: 16 }) : h(FileTypeIcon, { path: '', size: 16 })),
+        isDir ? h(IconFolderClose, { size: 16 }) : h(FileTypeIcon, { path: '', size: 16 })),
       h('input', {
         className: 'sol-exp-rename-input',
         placeholder: isDir ? t('tree.newDirName') : t('tree.newFileName'),
@@ -116,7 +116,7 @@ function TreeNode({ node, depth, tree, clipboard, actions }: {
   const gitCls = node.gitStatus ? gitStatusClass(node.gitStatus) : ''
 
   const icon = isDir
-    ? h(isExpanded ? IconFolderOpen16 : IconFolderClose16, { size: 16 })
+    ? h(isExpanded ? IconFolderOpen : IconFolderClose, { size: 16 })
     : h(FileTypeIcon, { path: node.path, size: 16 })
 
   return h('div', { className: 'sol-exp-tree-node-wrapper' },
@@ -204,11 +204,11 @@ export function TreePanel({ root, tree, clipboard, actions }: TreePanelProps): R
     h('div', { className: 'sol-exp-header' },
       h('span', { className: 'sol-exp-title' }, title),
       h('div', { className: 'sol-exp-header-actions' },
-        tool(t('tree.expand'), h(IconChevronDownOutline14, { size: 14 }), actions.expandAll),
-        tool(t('tree.collapse'), h(IconChevronUpOutline14, { size: 14 }), actions.collapseAll),
-        tool(t('tree.newFile'), h(IconPlusOutline16, { size: 16 }), actions.newFile),
-        tool(t('tree.newDir'), h(IconProjectAddOutline16, { size: 16 }), actions.newDir),
-        tool(t('tree.refresh'), h(IconRefreshOutline16, { size: 16 }), actions.refresh),
+        tool(t('tree.expand'), h(IconChevronDownOutline, { size: 14 }), actions.expandAll),
+        tool(t('tree.collapse'), h(IconChevronUpOutline, { size: 14 }), actions.collapseAll),
+        tool(t('tree.newFile'), h(IconPlusOutline, { size: 16 }), actions.newFile),
+        tool(t('tree.newDir'), h(IconProjectAddOutline, { size: 16 }), actions.newDir),
+        tool(t('tree.refresh'), h(IconRefreshOutline, { size: 16 }), actions.refresh),
       ),
     ),
     h('div', { className: 'sol-exp-content' }, content),

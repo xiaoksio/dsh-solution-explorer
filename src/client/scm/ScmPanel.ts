@@ -14,15 +14,15 @@
 import { createElement as h, Fragment } from 'react'
 import type { ReactNode } from 'react'
 import {
-  IconRefreshOutline16,
-  IconBranchOutline16,
-  IconPlusOutline16,
-  IconTrashOutline16,
-  IconCloseOutline16,
-  IconFolderClose16,
+  IconRefreshOutline,
+  IconBranchOutline,
+  IconPlusOutline,
+  IconTrashOutline,
+  IconCloseOutline,
+  IconFolderClose,
   FileTypeIcon,
-  IconChevronRightOutline14,
-} from '@deepseek-ai/dsh-client-ui-primitives'
+  IconChevronRightOutline,
+} from '../icons.ts'
 import { t } from '../locales.ts'
 import { isPreviewOnlyFile } from '../explorer/file-kind.ts'
 import { CommitsList } from './CommitsList.ts'
@@ -96,7 +96,7 @@ function Section(props: {
 }): ReactNode {
   return h('div', { className: 'sol-exp-scm-section' + (props.collapsed ? ' collapsed' : ''), 'data-section': props.id },
     h('div', { className: 'sol-exp-scm-section-header', onClick: props.onToggle },
-      h(IconChevronRightOutline14, { size: 14 }),
+      h(IconChevronRightOutline, { size: 14 }),
       props.title,
       h('span', { className: 'sol-exp-scm-header-actions' }, props.headerActions),
       h('span', { className: 'sol-exp-scm-section-count' }, props.count),
@@ -115,24 +115,24 @@ function ScmItem({ item, section, actions }: { item: ScmChange; section: string;
   }
   return h('div', { className: 'sol-exp-scm-item', title: t('file.open'), onClick: open },
     h('span', { className: 'sol-exp-file-icon' },
-      isDir ? h(IconFolderClose16, { size: 16 }) : h(FileTypeIcon, { path: item.path, size: 16 })),
+      isDir ? h(IconFolderClose, { size: 16 }) : h(FileTypeIcon, { path: item.path, size: 16 })),
     h('span', { className: 'sol-exp-scm-path' }, item.path),
     h('span', { className: 'sol-exp-scm-actions' },
       staged
         ? h('button', {
             className: 'sol-exp-scm-action-btn', title: t('scm.unstage'),
             onClick: (e) => { e.stopPropagation(); actions.unstage([item.path]) },
-          }, h(IconCloseOutline16, { size: 14 }))
+          }, h(IconCloseOutline, { size: 14 }))
         : h(Fragment, null,
             h('button', {
               className: 'sol-exp-scm-action-btn',
               title: section === 'conflicts' ? t('scm.merge.changes') : t('scm.stage'),
               onClick: (e) => { e.stopPropagation(); actions.stage([item.path]) },
-            }, h(IconPlusOutline16, { size: 14 })),
+            }, h(IconPlusOutline, { size: 14 })),
             h('button', {
               className: 'sol-exp-scm-action-btn', title: t('scm.discard'),
               onClick: (e) => { e.stopPropagation(); actions.discard([item.path]) },
-            }, h(IconTrashOutline16, { size: 14 })),
+            }, h(IconTrashOutline, { size: 14 })),
           ),
     ),
   )
@@ -201,14 +201,14 @@ export function ScmPanel({ scm, commits, root, actions }: ScmPanelProps): ReactN
       collapsed: collapsed('changes'), onToggle: () => actions.toggleSection('changes'),
       headerActions: h(Fragment, null,
         h('button', { className: 'sol-exp-hdr-btn', title: t('scm.refresh'), onClick: (e) => { e.stopPropagation(); actions.refresh() } },
-          h(IconRefreshOutline16, { size: 14 })),
+          h(IconRefreshOutline, { size: 14 })),
         allChanges.length > 0
           ? h('button', { className: 'sol-exp-hdr-btn', title: t('scm.stageAll'), onClick: (e) => { e.stopPropagation(); actions.stageAll() } },
-              h(IconPlusOutline16, { size: 14 }))
+              h(IconPlusOutline, { size: 14 }))
           : null,
         allChanges.length > 0
           ? h('button', { className: 'sol-exp-hdr-btn danger', title: t('scm.discardAll'), onClick: (e) => { e.stopPropagation(); actions.discardAll() } },
-              h(IconTrashOutline16, { size: 14 }))
+              h(IconTrashOutline, { size: 14 }))
           : null),
     },
       allChanges.length === 0
@@ -222,7 +222,7 @@ export function ScmPanel({ scm, commits, root, actions }: ScmPanelProps): ReactN
           id: 'staged', title: t('scm.staged'), count: staged.length,
           collapsed: collapsed('staged'), onToggle: () => actions.toggleSection('staged'),
           headerActions: h('button', { className: 'sol-exp-hdr-btn', title: t('scm.unstageAll'), onClick: (e) => { e.stopPropagation(); actions.unstageAll() } },
-            h(IconCloseOutline16, { size: 14 })),
+            h(IconCloseOutline, { size: 14 })),
         },
           staged.map((item) => h(ScmItem, { key: item.path, item, section: 'staged', actions })))
       : null,
@@ -235,12 +235,12 @@ export function ScmPanel({ scm, commits, root, actions }: ScmPanelProps): ReactN
       'data-repo-path': r.path,
       onClick: () => actions.selectRepo(r.path),
     },
-      h('span', { className: 'sol-exp-repo-icon' }, h(IconBranchOutline16, { size: 14 })),
+      h('span', { className: 'sol-exp-repo-icon' }, h(IconBranchOutline, { size: 14 })),
       h('span', { className: 'sol-exp-repo-name' }, r.name),
       h('span', { className: 'sol-exp-repo-branch' }, r.branch),
       h('span', { className: 'sol-exp-hdr-btn', title: t('scm.remote.title'), onClick: (e) => { e.stopPropagation(); actions.remotePanel() } }, '⇅'),
       h('span', { className: 'sol-exp-hdr-btn', title: t('scm.branch.title'), onClick: (e) => { e.stopPropagation(); actions.branchPanel() } },
-        h(IconBranchOutline16, { size: 12 })),
+        h(IconBranchOutline, { size: 12 })),
     )
 
   const remotePanel = scm.remotePanelOpen

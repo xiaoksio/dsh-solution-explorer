@@ -12,12 +12,12 @@ import { createElement as h, Fragment } from 'react'
 import { createPortal } from 'react-dom'
 import type { ReactNode } from 'react'
 import {
-  IconSearchOutline16,
-  IconBranchOutline16,
-  IconPanelLeftOutline16,
-  IconFolderClose16,
-  IconCodeOutline16,
-} from '@deepseek-ai/dsh-client-ui-primitives'
+  IconSearchOutline,
+  IconBranchOutline,
+  IconPanelLeftOutline,
+  IconFolderClose,
+  IconCodeOutline,
+} from './icons.ts'
 import { t } from './locales.ts'
 import { TreePanel } from './explorer/TreePanel.ts'
 import type { TreeActions } from './explorer/TreePanel.ts'
@@ -59,20 +59,20 @@ function ActivityBar({ state, actions }: { state: AppState; actions: PanelAction
   }, icon, badge ? h('span', { className: 'sol-exp-activity-badge' }, badge) : null)
 
   return h('div', { className: 'sol-exp-activity' },
-    btn('explorer', t('panel.explorer'), h(IconFolderClose16, { size: 16 })),
-    btn('search', t('file.search'), h(IconSearchOutline16, { size: 16 })),
-    btn('scm', t('panel.scm'), h(IconBranchOutline16, { size: 16 }), state.scm.gitChangesCount > 0 ? state.scm.gitChangesCount : undefined),
+    btn('explorer', t('panel.explorer'), h(IconFolderClose, { size: 16 })),
+    btn('search', t('file.search'), h(IconSearchOutline, { size: 16 })),
+    btn('scm', t('panel.scm'), h(IconBranchOutline, { size: 16 }), state.scm.gitChangesCount > 0 ? state.scm.gitChangesCount : undefined),
     h('div', {
       className: 'sol-exp-activity-btn' + (state.terminal.terminalOpen ? ' active' : ''),
       title: t('panel.terminal'),
       onClick: () => actions.toggleTerminal(),
-    }, h(IconCodeOutline16, { size: 16 })),
+    }, h(IconCodeOutline, { size: 16 })),
     h('div', { style: { flex: 1 } }),
     h('div', {
       className: 'sol-exp-activity-btn sol-exp-panel-toggle',
       title: t('panel.collapse'),
       onClick: () => actions.togglePanel(),
-    }, h(IconPanelLeftOutline16, { size: 16 })),
+    }, h(IconPanelLeftOutline, { size: 16 })),
   )
 }
 
@@ -91,12 +91,12 @@ function CollapsedRail({ state, actions }: { state: AppState; actions: PanelActi
       className: 'sol-exp-rail-btn',
       title: t('panel.expand'),
       onClick: () => actions.togglePanel(),
-    }, h(IconPanelLeftOutline16, { size: 16 })),
-    icon(t('panel.explorer'), h(IconFolderClose16, { size: 16 }), () => actions.railOpen('explorer')),
-    icon(t('file.search'), h(IconSearchOutline16, { size: 16 }), () => actions.railOpen('search')),
-    icon(t('panel.scm'), h(IconBranchOutline16, { size: 16 }), () => actions.railOpen('scm'),
+    }, h(IconPanelLeftOutline, { size: 16 })),
+    icon(t('panel.explorer'), h(IconFolderClose, { size: 16 }), () => actions.railOpen('explorer')),
+    icon(t('file.search'), h(IconSearchOutline, { size: 16 }), () => actions.railOpen('search')),
+    icon(t('panel.scm'), h(IconBranchOutline, { size: 16 }), () => actions.railOpen('scm'),
       '', state.scm.gitChangesCount > 0 ? state.scm.gitChangesCount : undefined),
-    icon(t('panel.terminal'), h(IconCodeOutline16, { size: 16 }), () => actions.toggleTerminal(),
+    icon(t('panel.terminal'), h(IconCodeOutline, { size: 16 }), () => actions.toggleTerminal(),
       ' sol-exp-terminal-toggle' + (state.terminal.terminalOpen ? ' active' : '')),
   )
 }

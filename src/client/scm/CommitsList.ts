@@ -8,7 +8,7 @@
  */
 import { createElement as h, Fragment } from 'react'
 import type { ReactNode } from 'react'
-import { FileTypeIcon } from '@deepseek-ai/dsh-client-ui-primitives'
+import { FileTypeIcon } from '../icons.ts'
 import { t } from '../locales.ts'
 import { relTime } from '../shared/dom.ts'
 import { gitStatusClass } from '../explorer/file-kind.ts'

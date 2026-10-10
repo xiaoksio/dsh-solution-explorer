@@ -11,7 +11,7 @@
 [![license](https://img.shields.io/github/license/xiaoksio/dsh-solution-explorer)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/xiaoksio/dsh-solution-explorer)](https://github.com/xiaoksio/dsh-solution-explorer)
 
-[![DSH 版本](https://img.shields.io/badge/DSH-0.1.5--rc.1%2B-4d6bfe)](https://www.npmjs.com/package/@deepseek-ai/dsh?activeTab=versions)
+[![DSH 版本](https://img.shields.io/badge/DSH-0.1.5--rc.1_~_0.2.x-4d6bfe)](https://www.npmjs.com/package/@deepseek-ai/dsh?activeTab=versions)
 
 ![文件树 + git 标记](https://img.shields.io/badge/-文件树_%2B_git_标记-4d6bfe) ![多标签编辑器](https://img.shields.io/badge/-多标签编辑器-4d6bfe) ![就地预览](https://img.shields.io/badge/-Markdown%2FHTML%2FPDF_预览-4d6bfe) ![并排差异](https://img.shields.io/badge/-并排差异-4d6bfe) ![提交图](https://img.shields.io/badge/-提交图-4d6bfe) ![内置终端](https://img.shields.io/badge/-内置终端-4d6bfe) ![接管官方右栏](https://img.shields.io/badge/-接管官方右栏-4d6bfe)
 
@@ -63,6 +63,14 @@ dsh plugin --profile web add /path/to/dsh-solution-explorer
 ```
 
 安装后刷新 Web UI。会话打开工作区后，资源管理器面板会作为独立右列出现。
+
+## 兼容性
+
+- **DSH 0.1.x / 0.2.x** —— peer 声明范围为 `>=0.1.0-rc.1 <0.3.0-0`（实测自 `0.1.5-rc.1` 起，含 `0.2.0-rc.2`）。
+- **新 DSH 需要的最低插件版本**：
+  - DSH ≥ 0.1.7：**1.0.1** —— 0.1.7 起会话列表快照不再有 `current` 字段（主视图会话改由 `retainedBy.mainView` 标记），旧版插件会因此把整个右列隐藏（#2）。
+  - DSH ≥ 0.2.0：**1.0.2** —— 0.2 把官方图标的导出名从 `IconXxx16`／`IconXxx14` 改成 `IconXxxRegular`／`IconXxxMedium`，旧版插件引用到 `undefined`，React 抛 #130 后整个面板渲染为空（#3）。
+- DSH 会在安装/激活前校验 peer 版本范围，因此"插件版本早于所装 DSH"表现为**安装被拒**，而不是运行时才报错。升级 DSH 后若右侧栏没出现，先在设置页的插件列表里核对本插件的版本。
 
 ## 配置
 

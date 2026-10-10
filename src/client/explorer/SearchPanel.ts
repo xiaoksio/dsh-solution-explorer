@@ -7,7 +7,7 @@
  */
 import { createElement as h } from 'react'
 import type { ReactNode } from 'react'
-import { FileTypeIcon, IconFolderClose16, IconSearchOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { FileTypeIcon, IconFolderClose, IconSearchOutline } from '../icons.ts'
 import { t } from '../locales.ts'
 import type { SearchState, TreeState } from '../state/store.ts'
 
@@ -56,7 +56,7 @@ export function SearchPanel({ search, tree, root, actions }: SearchPanelProps): 
           },
         },
           h('span', { className: 'sol-exp-icon' },
-            isDir ? h(IconFolderClose16, { size: 16 }) : h(FileTypeIcon, { path: r.path, size: 16 })),
+            isDir ? h(IconFolderClose, { size: 16 }) : h(FileTypeIcon, { path: r.path, size: 16 })),
           h('span', { className: 'sol-exp-name' }, r.name),
           h('span', { className: 'sol-exp-path' }, r.path),
         )
@@ -66,7 +66,7 @@ export function SearchPanel({ search, tree, root, actions }: SearchPanelProps): 
   return h('div', { className: 'sol-exp-search-panel' },
     h('div', { className: 'sol-exp-header' }, h('span', { className: 'sol-exp-title' }, title)),
     h('div', { className: 'sol-exp-search' },
-      h(IconSearchOutline16, { size: 14, className: 'sol-exp-search-icon' }),
+      h(IconSearchOutline, { size: 14, className: 'sol-exp-search-icon' }),
       h('input', {
         type: 'text',
         className: 'sol-exp-search-input',

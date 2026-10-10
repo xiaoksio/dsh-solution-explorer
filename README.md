@@ -11,7 +11,7 @@
 [![license](https://img.shields.io/github/license/xiaoksio/dsh-solution-explorer)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/xiaoksio/dsh-solution-explorer)](https://github.com/xiaoksio/dsh-solution-explorer)
 
-[![DSH](https://img.shields.io/badge/DSH-0.1.5--rc.1%2B-4d6bfe)](https://www.npmjs.com/package/@deepseek-ai/dsh?activeTab=versions)
+[![DSH](https://img.shields.io/badge/DSH-0.1.5--rc.1_~_0.2.x-4d6bfe)](https://www.npmjs.com/package/@deepseek-ai/dsh?activeTab=versions)
 
 ![File explorer + git status](https://img.shields.io/badge/-File_explorer_%2B_git_status-4d6bfe) ![Multi-tab editor](https://img.shields.io/badge/-Multi--tab_editor-4d6bfe) ![Previews](https://img.shields.io/badge/-Previews-4d6bfe) ![Diff](https://img.shields.io/badge/-Diff-4d6bfe) ![Commit graph](https://img.shields.io/badge/-Commit_graph-4d6bfe) ![Terminal](https://img.shields.io/badge/-Terminal-4d6bfe) ![Sidebar takeover](https://img.shields.io/badge/-Sidebar_takeover-4d6bfe)
 
@@ -112,6 +112,22 @@ dsh plugin --profile web add /path/to/dsh-solution-explorer
 
 After installing, reload the Web UI. The explorer panel appears as its own right
 column once a session with a workspace is active.
+
+## Compatibility
+
+- **DSH 0.1.x / 0.2.x** — the declared peer range is
+  `>=0.1.0-rc.1 <0.3.0-0` (tested from `0.1.5-rc.1`, including `0.2.0-rc.2`).
+- **Minimum plugin version per DSH release**:
+  - DSH ≥ 0.1.7: **1.0.1** — from 0.1.7 the Session-list snapshot no longer carries
+    `current` (the main-view Session is the one retained by `mainView`), and an older
+    plugin hides the whole right column because of it (#2).
+  - DSH ≥ 0.2.0: **1.0.2** — 0.2 renamed the official icon exports from
+    `IconXxx16`/`IconXxx14` to `IconXxxRegular`/`IconXxxMedium`; the old names resolve
+    to `undefined`, React throws #130, and the panel renders as an empty column (#3).
+- DSH validates these peer ranges before installing or activating a plugin, so a
+  plugin older than the installed DSH is refused at install time rather than
+  failing at runtime. After upgrading DSH, check this plugin's version in the
+  settings page before assuming the panel broke.
 
 ## Configuration
 

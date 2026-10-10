@@ -1,6 +1,6 @@
 import { createElement as h, useCallback, useEffect, useRef, useState } from "react"
 
-import { IconEditOutline16 } from "@deepseek-ai/dsh-client-ui-primitives"
+import { IconEditOutline } from "../icons.ts"
 
 import { t } from "../locales.ts"
 
@@ -873,7 +873,7 @@ const getState = commands.getEditorState;
 
 			if (!file) return h("div", { className: "sol-exp-editor-empty" },
 
-				h(IconEditOutline16, { size: 28 }),
+				h(IconEditOutline, { size: 28 }),
 
 				h("span", null, t("editor.noFile")),
 
