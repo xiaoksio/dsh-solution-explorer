@@ -5,11 +5,21 @@
 
 import type { AppState } from "../state/store.ts"
 import { commands } from '../commands.ts'
+import { resolveShellGrid } from "./grid-find.ts"
 
 /** Panel width bounds and collapsed rail width (mirrors panel.ts constants). */
 const PANEL_MIN = 264;
 const PANEL_MAX = 560;
 const PANEL_RAIL = 56;
+
+/**
+ * Where this plugin's column sits in the shell's grid: the first row, as the
+ * fourth track — the shell declares three tracks (sidebar | center | rightbar)
+ * plus a full-width bottom row, and this column is the track they make no room
+ * for.
+ */
+const PANEL_ROW = "1";
+const PANEL_TRACK = 4;
 
 export interface GridDeps {
   state: AppState
@@ -71,11 +81,7 @@ export function clampPanelWidth(px: number): number {
 
 export function findFrame(): any {
 
-					const s = document.querySelector("[data-dsh-frame]");
-
-					if (s !== null) return s;
-
-					return document.querySelector("[class*=\"sidebarCol\"]")?.parentElement ?? null;
+					return resolveShellGrid();
 
 				}
 
@@ -118,7 +124,10 @@ export function applyGrid({ state }: { state: AppState }): void {
 
 export function mountColumn({ state, render, applySettings }: GridDeps): void {
 
-					if (state.layout.panelFrame !== null) return;
+					// A mounted column stays mounted: the shell may re-render the
+					// grid element's tracks at any time, but the frame element
+					// itself only disappears when this plugin is torn down.
+					if (state.layout.panelFrame !== null && state.layout.panelCol !== null) return;
 
 					const frame = findFrame();
 
@@ -131,6 +140,15 @@ export function mountColumn({ state, render, applySettings }: GridDeps): void {
 					state.layout.panelCol.dataset.solutionExplorer = "";
 
 					state.layout.panelCol.style.minWidth = "0";
+
+					// Pin the column to the grid's first row, fourth track. The shell's
+					// own span (the full-width bottom row) forces line -1 to the third
+					// line, so without this the new item auto-places into an implicit
+					// SECOND row — the column then renders orphaned under the sidebar
+					// (the "plugin ended up in the wrong place" report).
+					state.layout.panelCol.style.gridRow = PANEL_ROW;
+
+					state.layout.panelCol.style.gridColumn = String(PANEL_TRACK);
 
 					state.layout.panelCol.style.overflow = "hidden";
 
@@ -223,14 +241,20 @@ export function mountColumn({ state, render, applySettings }: GridDeps): void {
 
 										const syncGrid = () => {
 
-						if (state.layout.panelFrame === null) return;
+						const grid = state.layout.panelFrame;
+						if (grid === null) return;
 
-						const inline = state.layout.panelFrame.style.gridTemplateColumns;
+						// Our own write comes back through the same observer; the
+						// shell's own re-render (a rightbar open, a drag of the
+						// shell's sidebar) rewrites the track list in place, and the
+						// three shell tracks are then re-read and our column width
+						// re-appended to them.
+						const inline = grid.style.gridTemplateColumns;
 						if (inline === "" || inline === state.layout.lastGridApplied) return;
 
 						const tracks = parseGridTracks(inline);
-						if (tracks.length >= 2) {
-							state.layout.shellTracks = tracks.length >= 3 ? tracks.slice(0, 3) : [...tracks, "minmax(0, 1fr)"];
+						if (tracks.length >= 3) {
+							state.layout.shellTracks = tracks.slice(0, 3);
 							applyGrid({ state });
 						}
 					};
@@ -262,7 +286,7 @@ state.layout.styleObs = new MutationObserver(syncGrid);
 
 						if (tracks.length >= 2 && tracks.length <= 3) state.layout.shellTracks = tracks;
 
-						else if (tracks.length === 4 && trackPx(tracks[0]) > 0) state.layout.shellTracks = tracks.slice(0, 3);
+						else if (tracks.length >= 4 && trackPx(tracks[0]) > 0) state.layout.shellTracks = tracks.slice(0, 3);
 
 					}
 

@@ -107,6 +107,7 @@ export interface LayoutState {
   panelWidth: number
   panelDragged: boolean
   panelCollapsed: boolean
+  /** The shell's column grid (the element whose `grid-template-columns` sizes the frame). */
   panelFrame: any
   panelCol: any
   shellTracks: any[]
