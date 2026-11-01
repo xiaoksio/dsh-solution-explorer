@@ -361,7 +361,7 @@ export const fsPost: Record<string, Handler> = {
     // Android has no shell launcher: xdg-open here is the engine's Termux
     // script copy which silently does nothing without Termux installed (it
     // still exits 0, so the host previously reported ok:true while nothing
-    // happened). Fail loudly so the client can take its C→D fallback chain
+    // happened). Fail loudly so the client can take its B→D2→D1 fallback chain
     // (native bridge → download → share) instead of showing "opened".
     if (process.platform === 'android') {
       json(res, { ok: false, code: 'android-no-shell', error: { message: 'system open is not available on Android; use the native bridge or download instead' } }); return

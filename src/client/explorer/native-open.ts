@@ -5,10 +5,10 @@
  * engine's Termux script copy and silently no-ops), so the only real "system
  * open" is a JS bridge injected by the DSH Mobile app:
  *
- *   C  native   window.DshAndroidOpen.open(abs, mime)  → ACTION_VIEW (FileProvider)
+ *   B  native   window.DshAndroidOpen.open(abs, mime)   → ACTION_VIEW (FileProvider)
+ *   D2 share    window.DshAndroidOpen.share(abs, mime)  → ACTION_SEND chooser
  *   D1 download /raw?download=1 → Content-Disposition: attachment, the
  *                                 WebView/app downloader takes it
- *   D2 share    window.DshAndroidOpen.share(abs, mime) → ACTION_SEND chooser
  *
  * Every step degrades to the next on failure; desktop environments simply
  * never find a bridge and D1 works everywhere a download works.
@@ -164,19 +164,20 @@ export async function triggerDownload(root: string, path: string): Promise<boole
 export type OpenWithSystemResult = 'native' | 'download' | 'share' | 'failed'
 
 /**
- * Open a workspace file with the system, degrading C → D1 → D2:
- * bridge open → download → bridge share. Never throws.
+ * Open a workspace file with the system, degrading B → D2 → D1:
+ * bridge open (ACTION_VIEW default app) → bridge share (chooser) → download.
+ * Never throws.
  */
 export async function openWithSystem(root: string, path: string): Promise<OpenWithSystemResult> {
   if (!root || !path) return 'failed'
   const abs = await absolutePathOf(root, path)
   const mime = mimeOf(path)
-  // C: system default app via the app-provided bridge.
+  // B: system default app via the app-provided bridge.
   if (abs !== null && bridgeCall((b) => b.open(abs, mime))) return 'native'
-  // D1: let the platform downloader take the bytes.
-  if (await triggerDownload(root, path)) return 'download'
   // D2: share the file out through a chooser.
   if (abs !== null && bridgeCall((b) => b.share(abs, mime))) return 'share'
+  // D1: let the platform downloader take the bytes.
+  if (await triggerDownload(root, path)) return 'download'
   return 'failed'
 }
 

@@ -900,7 +900,7 @@ const getState = commands.getEditorState;
 			} },
 				h("div", null, document.documentElement.lang?.startsWith("zh") ? "不支持打开此文件" : "This file type is not supported"),
 				// Escape hatch for binary files: hand the path to the system
-				// (Android: C→D fallback chain; desktop: default association).
+				// (Android: B→D2→D1 fallback chain; desktop: default association).
 				file
 					? h("button", {
 						className: "sol-exp-modal-btn primary",

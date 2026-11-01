@@ -25,7 +25,7 @@ export interface ContextMenuDeps {
  * Touch-first environment (Android phone/tablet in the DSH app): pointer
  * events are coarse and there is no working system shell behind open-native.
  * The menu drops the dead Windows-only entries and "open" runs the
- * C→D fallback chain instead.
+ * B→D2→D1 fallback chain instead.
  */
 function isTouchEnv(): boolean {
   try { return window.matchMedia('(pointer: coarse)').matches } catch { return false }
@@ -78,7 +78,7 @@ export function registerContextMenuCommands(deps: ContextMenuDeps): () => void {
   };
   commands.openNative = openNative;
 
-  // C→D1→D2 fallback chain for "open with system", for the context menu,
+  // B→D2→D1 fallback chain for "open with system", for the context menu,
   // the touch quick menu and the editor's unsupported-file page.
   commands.openWithSystem = (path: string, root?: string) => {
     const useRoot = typeof root === 'string' && root ? root : state.root;
@@ -194,7 +194,7 @@ export function registerContextMenuCommands(deps: ContextMenuDeps): () => void {
         if (!isDir) {
           if (touch) {
             // Touch-first ordering: the editor (A route) leads, "open" runs
-            // the C→D system-open chain. openWith/properties/reveal are dead
+            // the B→D2→D1 system-open chain. openWith/properties/reveal are dead
             // ends on Android, so they are not offered.
             addItem(t("context.openInEditor"), false, () => commands.openFile?.(targets[0]));
             addItem(t("context.openSystem"), false, () => commands.openWithSystem?.(targets[0]));
