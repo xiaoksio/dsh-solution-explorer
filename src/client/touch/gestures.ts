@@ -12,8 +12,14 @@
 export const SWIPE_DIRECTION_CONFIRM = 24
 /** Horizontal distance that triggers collapse/expand. */
 export const SWIPE_TRIGGER = 48
-/** Right-edge zone (px) where an inward swipe opens the closed panel. */
-export const EDGE_OPEN_ZONE = 72
+/**
+ * Right-edge zone (px) where an inward swipe opens the closed panel. Wide on
+ * purpose: the outermost ~56 CSS px of a phone edge belong to the system's
+ * full-screen (back) gesture — a swipe starting there never reaches the page.
+ * A narrow zone forces the finger onto that strip, so opens are eaten by the
+ * launcher more often than they land.
+ */
+export const EDGE_OPEN_ZONE = 120
 
 export interface SwipeDecideInput {
   /** Total horizontal delta, positive = rightward. */
@@ -132,6 +138,7 @@ export function bindEdgeSwipeOpen(handlers: PanelSwipeHandlers): () => void {
   let startX = 0
   let startY = 0
   let tracking = false
+  let scrollerConsumes = false
 
   const inZone = (x: number): boolean =>
     x >= window.innerWidth - EDGE_OPEN_ZONE
@@ -142,6 +149,13 @@ export function bindEdgeSwipeOpen(handlers: PanelSwipeHandlers): () => void {
     if (!touch) return
     tracking = inZone(touch.clientX)
     if (!tracking) return
+    // The native right column fullscreen owns horizontal swipes (the mobile
+    // layout plugin runs its own exit gesture on it) — an open on top of that
+    // would break the one-column-at-a-time rule.
+    if (document.querySelector('[data-rightbar-fullscreen]') !== null) { tracking = false; return }
+    // A horizontal scroller under the finger (PDF pages, wide sheets) owns
+    // its pans: the zone is wide enough now to cover real content edges.
+    scrollerConsumes = touchScrollerConsumes(e.target)
     startX = touch.clientX
     startY = touch.clientY
   }
@@ -154,7 +168,7 @@ export function bindEdgeSwipeOpen(handlers: PanelSwipeHandlers): () => void {
     const decision = decidePanelSwipe({
       dx: touch.clientX - startX,
       dy: touch.clientY - startY,
-      scrollerConsumes: false,
+      scrollerConsumes,
       collapsed: true,
     })
     if (decision === 'expand') handlers.onExpand()

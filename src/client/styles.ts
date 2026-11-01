@@ -471,4 +471,12 @@ export const STYLES = `
 .sol-set-sw input:checked + .sol-set-sw-track { background: var(--dsw-alias-button-info-fill); }
 .sol-set-sw-thumb { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: left .18s; }
 .sol-set-sw input:checked + .sol-set-sw-track .sol-set-sw-thumb { left: 18px; }
+
+/* Portrait phone: the shell hides the official "open right sidebar" header
+   button whenever the persisted sidebarRight store claims the column is
+   expanded — which it does across restarts while the mobile grid keeps the
+   column track at 0 and nothing renders. That hides the only entry to the
+   native column on the main window, so force it back. Clicks are taken over
+   by the native-rightbar bridge (store realign + exclusivity). */
+html[data-dshm-mode="mobile"] [data-conversation-header-corner] [data-sidebar-right-expand] { display: flex !important; }
 `

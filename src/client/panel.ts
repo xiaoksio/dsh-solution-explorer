@@ -257,6 +257,20 @@ export function mountPanel(ctx: ClientContext): void {
 
 					applyGrid(gridDeps);
 
+					// Portrait exclusivity: the native right column is a second
+					// fullscreen sheet — it must not stand while ours does.
+					commands.closeNativeRightbar?.();
+
+				};
+
+				// Bridges for the native-rightbar exclusivity (bound in
+				// index.ts). The sheet reads as closed while folded, and the
+				// native column going fullscreen folds this sheet back.
+				commands.panelClosed = () => state.layout.panelCollapsed;
+
+				commands.nativeRightbarOpened = () => {
+					if (!isPortraitPhone() || state.layout.panelCollapsed) return;
+					commands.togglePanel?.();
 				};
 
 
@@ -359,6 +373,10 @@ export function mountPanel(ctx: ClientContext): void {
 						render();
 
 						applyGrid(gridDeps);
+
+						// Portrait exclusivity: fold the native right column
+						// before this sheet covers the screen.
+						commands.closeNativeRightbar?.();
 
 						return;
 
