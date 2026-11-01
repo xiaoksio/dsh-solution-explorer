@@ -12,6 +12,8 @@
 export const SWIPE_DIRECTION_CONFIRM = 24
 /** Horizontal distance that triggers collapse/expand. */
 export const SWIPE_TRIGGER = 48
+/** Right-edge zone (px) where an inward swipe opens the closed panel. */
+export const EDGE_OPEN_ZONE = 72
 
 export interface SwipeDecideInput {
   /** Total horizontal delta, positive = rightward. */
@@ -116,5 +118,57 @@ export function bindPanelSwipe(el: HTMLElement, handlers: PanelSwipeHandlers): (
     el.removeEventListener('touchstart', onStart)
     el.removeEventListener('touchend', onEnd)
     el.removeEventListener('touchcancel', () => { tracking = false })
+  }
+}
+
+/**
+ * Bind a right-edge inward swipe that expands the collapsed panel. On a phone
+ * the closed column has zero width — nothing to swipe on — so the open
+ * gesture lives on the document instead: start within the edge zone, end
+ * leftward-dominant past the trigger.
+ * @returns a disposer.
+ */
+export function bindEdgeSwipeOpen(handlers: PanelSwipeHandlers): () => void {
+  let startX = 0
+  let startY = 0
+  let tracking = false
+
+  const inZone = (x: number): boolean =>
+    x >= window.innerWidth - EDGE_OPEN_ZONE
+
+  const onStart = (e: TouchEvent) => {
+    if (!handlers.enabled() || !handlers.collapsed()) { tracking = false; return }
+    const touch = e.touches[0]
+    if (!touch) return
+    tracking = inZone(touch.clientX)
+    if (!tracking) return
+    startX = touch.clientX
+    startY = touch.clientY
+  }
+
+  const onEnd = (e: TouchEvent) => {
+    if (!tracking) return
+    tracking = false
+    const touch = e.changedTouches[0]
+    if (!touch) return
+    const decision = decidePanelSwipe({
+      dx: touch.clientX - startX,
+      dy: touch.clientY - startY,
+      scrollerConsumes: false,
+      collapsed: true,
+    })
+    if (decision === 'expand') handlers.onExpand()
+  }
+
+  // Capture phase: the mobile layout plugin observes gestures at window
+  // level, and any stopPropagation there would keep a bubble-phase listener
+  // on `document` from ever firing.
+  document.addEventListener('touchstart', onStart, { passive: true, capture: true })
+  document.addEventListener('touchend', onEnd, { passive: true, capture: true })
+  document.addEventListener('touchcancel', () => { tracking = false }, { passive: true, capture: true })
+  return () => {
+    document.removeEventListener('touchstart', onStart, { capture: true } as EventListenerOptions)
+    document.removeEventListener('touchend', onEnd, { capture: true } as EventListenerOptions)
+    document.removeEventListener('touchcancel', () => { tracking = false }, { capture: true } as EventListenerOptions)
   }
 }

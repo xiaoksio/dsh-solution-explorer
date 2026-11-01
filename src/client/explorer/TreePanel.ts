@@ -60,17 +60,30 @@ export interface TreePanelProps {
 }
 
 // ── Touch semantics ────────────────────────────────────────────────────────
-// On a coarse pointer (Android tablet/phone): a single tap selects the file
-// AND schedules a quick menu 250ms later; a second tap (double tap) cancels
-// the pending menu and opens the file. Long-press keeps the full context
-// menu through the native oncontextmenu event. Fine pointers keep the
-// desktop behavior untouched.
-let tapMenuTimer: number | null = null
+// On a coarse pointer (Android tablet/phone): a single tap selects, a double
+// tap opens the file, and a long-press (~480ms, minimal movement) opens the
+// context menu at the press point. The native oncontextmenu that Android
+// synthesizes for the same gesture is swallowed to keep exactly one menu.
+// The double-tap is detected here from consecutive clicks rather than the
+// browser's dblclick: some Android WebViews never synthesize dblclick for
+// fast touch taps, which made opening a file feel dead. Fine pointers keep
+// the desktop behavior untouched (and the same click-pair logic matches a
+// real mouse double-click).
+let pressTimer: number | null = null
+let pressFired = false
+let pressX = 0
+let pressY = 0
+/** Last tap for the double-tap window: the row path and click timestamp. */
+let lastTapPath: string | null = null
+let lastTapTime = 0
 
-function cancelPendingTapMenu(): void {
-  if (tapMenuTimer !== null) {
-    window.clearTimeout(tapMenuTimer)
-    tapMenuTimer = null
+/** Two clicks within this window on the same row count as "open". */
+const DOUBLE_TAP_MS = 400
+
+function cancelPendingPress(): void {
+  if (pressTimer !== null) {
+    window.clearTimeout(pressTimer)
+    pressTimer = null
   }
 }
 
@@ -147,31 +160,52 @@ function TreeNode({ node, depth, tree, clipboard, actions }: {
       draggable: matchPointer('fine'),
       'data-sol-exp-path': node.path,
       'data-sol-exp-isdir': isDir ? '1' : '0',
+      onPointerDown: (e) => {
+        if (!matchPointer('coarse')) return
+        pressFired = false
+        pressX = e.clientX
+        pressY = e.clientY
+        cancelPendingPress()
+        pressTimer = window.setTimeout(() => {
+          pressTimer = null
+          pressFired = true
+          try { navigator.vibrate?.(15) } catch { /* vibration is a courtesy only */ }
+          actions.contextMenu(node.path, pressX, pressY, isDir)
+        }, 480)
+      },
+      onPointerMove: (e) => {
+        // A scroll or drag gesture must never turn into a menu.
+        if (pressTimer !== null && (Math.abs(e.clientX - pressX) > 12 || Math.abs(e.clientY - pressY) > 12)) {
+          cancelPendingPress()
+        }
+      },
+      onPointerUp: () => cancelPendingPress(),
+      onPointerCancel: () => cancelPendingPress(),
+      onPointerLeave: () => cancelPendingPress(),
       onClick: (e) => {
-        if (!isDir && matchPointer('coarse')) {
-          // Tap 1: select now, quick menu after the double-tap window.
-          actions.select(node.path, false, false, false)
-          cancelPendingTapMenu()
-          const x = e.clientX
-          const y = e.clientY
-          tapMenuTimer = window.setTimeout(() => {
-            tapMenuTimer = null
-            actions.contextMenu(node.path, x, y, false)
-          }, 250)
+        // The click that ends a long-press must not also act on the row.
+        if (pressFired) { pressFired = false; e.preventDefault(); return }
+        // A second click on the same row inside the double-tap window opens
+        // the file — detected here because Android WebViews may never
+        // synthesize dblclick for touch taps. Directories toggle through
+        // select and have no double-click open.
+        const now = Date.now()
+        if (!isDir && lastTapPath === node.path && now - lastTapTime < DOUBLE_TAP_MS) {
+          lastTapPath = null
+          lastTapTime = 0
+          actions.openFile(node.path)
           return
         }
+        lastTapPath = node.path
+        lastTapTime = now
         actions.select(node.path, e.shiftKey, e.ctrlKey || e.metaKey, isDir)
-      },
-      // Files open on double click (single click only selects, as before);
-      // directories keep toggling through the single-click select above.
-      // A double tap cancels the pending quick menu first.
-      onDoubleClick: isDir ? undefined : () => {
-        cancelPendingTapMenu()
-        actions.openFile(node.path)
       },
       onContextMenu: (e) => {
         e.preventDefault()
         e.stopPropagation()
+        // A long-press already opened the menu through the press timer; the
+        // synthetic contextmenu for the same gesture must not open a second.
+        if (pressFired) { pressFired = false; return }
         actions.contextMenu(node.path, e.pageX, e.pageY, isDir)
       },
       onDragStart: () => actions.dragStart(node.path),

@@ -37,6 +37,8 @@ import { registerScmCommands } from "./scm/commands.ts"
 
 import { applyGrid, registerGridCommands } from "./layout/grid.ts"
 
+import { isPortraitPhone } from "./touch/form-factor.ts"
+
 import { waitForFrame } from "./layout/lifecycle.ts"
 
 import { createTerminalController } from "./terminal-client/terminal.ts"
@@ -76,7 +78,13 @@ export function mountPanel(ctx: ClientContext): void {
 					closeMenu: () => { state.contextMenu = null; render() },
 					tree: {
 						select: (path, shift, ctrl, isDir) => { commands.select?.(path, shift, ctrl, isDir) },
-						openFile: (path) => { void commands.openFile?.(path) },
+						openFile: (path) => {
+							void commands.openFile?.(path);
+							// Portrait phone: the editor renders in the main window
+							// (default path), so this panel only needs to step aside
+							// and hand the whole screen to it.
+							if (isPortraitPhone() && !state.layout.panelCollapsed) commands.togglePanel?.();
+						},
 						contextMenu: (path, x, y, isDir) => { commands.contextMenu?.(path, x, y, isDir) },
 						expandAll: () => { commands.expandAll?.() },
 						collapseAll: () => { commands.collapseAll?.() },
