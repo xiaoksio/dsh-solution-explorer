@@ -37,6 +37,8 @@ import { registerScmCommands } from "./scm/commands.ts"
 
 import { applyGrid, registerGridCommands } from "./layout/grid.ts"
 
+import { isPortraitPhone } from "./touch/form-factor.ts"
+
 import { waitForFrame } from "./layout/lifecycle.ts"
 
 import { createTerminalController } from "./terminal-client/terminal.ts"
@@ -76,7 +78,13 @@ export function mountPanel(ctx: ClientContext): void {
 					closeMenu: () => { state.contextMenu = null; render() },
 					tree: {
 						select: (path, shift, ctrl, isDir) => { commands.select?.(path, shift, ctrl, isDir) },
-						openFile: (path) => { void commands.openFile?.(path) },
+						openFile: (path) => {
+							void commands.openFile?.(path);
+							// Portrait phone: the editor renders in the main window
+							// (default path), so this panel only needs to step aside
+							// and hand the whole screen to it.
+							if (isPortraitPhone() && !state.layout.panelCollapsed) commands.togglePanel?.();
+						},
 						contextMenu: (path, x, y, isDir) => { commands.contextMenu?.(path, x, y, isDir) },
 						expandAll: () => { commands.expandAll?.() },
 						collapseAll: () => { commands.collapseAll?.() },
@@ -249,6 +257,20 @@ export function mountPanel(ctx: ClientContext): void {
 
 					applyGrid(gridDeps);
 
+					// Portrait exclusivity: the native right column is a second
+					// fullscreen sheet — it must not stand while ours does.
+					commands.closeNativeRightbar?.();
+
+				};
+
+				// Bridges for the native-rightbar exclusivity (bound in
+				// index.ts). The sheet reads as closed while folded, and the
+				// native column going fullscreen folds this sheet back.
+				commands.panelClosed = () => state.layout.panelCollapsed;
+
+				commands.nativeRightbarOpened = () => {
+					if (!isPortraitPhone() || state.layout.panelCollapsed) return;
+					commands.togglePanel?.();
 				};
 
 
@@ -351,6 +373,10 @@ export function mountPanel(ctx: ClientContext): void {
 						render();
 
 						applyGrid(gridDeps);
+
+						// Portrait exclusivity: fold the native right column
+						// before this sheet covers the screen.
+						commands.closeNativeRightbar?.();
 
 						return;
 

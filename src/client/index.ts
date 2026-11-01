@@ -10,6 +10,10 @@
 
 
 
+// Legacy WebView polyfills must run before any dependency's module body:
+// this is the entry's first import on purpose.
+import './shims/legacy-polyfills.ts'
+
 import type { ClientContext, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
 
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
@@ -33,6 +37,8 @@ import { mountPanel } from './panel.ts'
 import { commands } from './commands.ts'
 
 import { registerViewer } from './viewer/register.ts'
+
+import { bindNativeRightbar, watchNativeRightbarExclusive } from './layout/native-rightbar.ts'
 
 import { mainViewSessionId } from './shared/session.ts'
 
@@ -126,6 +132,14 @@ declare module '@deepseek-ai/dsh-client-ui-conversation/client' {
 			};
 
 			registerViewer(ctx, rootOf);
+
+			// Native right-column bridge: restores the official header button
+			// on a portrait phone and keeps the two right columns exclusive.
+			const softGet = (ctx as unknown as { get?: (name: string) => unknown }).get?.bind(ctx);
+
+			ctx.effect(() => bindNativeRightbar(softGet), "dsh-solution-explorer: native rightbar bridge");
+
+			ctx.effect(() => watchNativeRightbarExclusive(), "dsh-solution-explorer: rightbar exclusivity");
 
 			mountPanel(ctx);
 

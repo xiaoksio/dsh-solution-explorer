@@ -59,6 +59,38 @@ export interface TreePanelProps {
   actions: TreeActions
 }
 
+// ── Touch semantics ────────────────────────────────────────────────────────
+// On a coarse pointer (Android tablet/phone): a single tap selects, a double
+// tap opens the file, and a long-press (~480ms, minimal movement) opens the
+// context menu at the press point. The native oncontextmenu that Android
+// synthesizes for the same gesture is swallowed to keep exactly one menu.
+// The double-tap is detected here from consecutive clicks rather than the
+// browser's dblclick: some Android WebViews never synthesize dblclick for
+// fast touch taps, which made opening a file feel dead. Fine pointers keep
+// the desktop behavior untouched (and the same click-pair logic matches a
+// real mouse double-click).
+let pressTimer: number | null = null
+let pressFired = false
+let pressX = 0
+let pressY = 0
+/** Last tap for the double-tap window: the row path and click timestamp. */
+let lastTapPath: string | null = null
+let lastTapTime = 0
+
+/** Two clicks within this window on the same row count as "open". */
+const DOUBLE_TAP_MS = 400
+
+function cancelPendingPress(): void {
+  if (pressTimer !== null) {
+    window.clearTimeout(pressTimer)
+    pressTimer = null
+  }
+}
+
+function matchPointer(kind: 'coarse' | 'fine'): boolean {
+  try { return window.matchMedia(`(pointer: ${kind})`).matches } catch { return kind === 'fine' }
+}
+
 /**
  * The inline "new file / new folder" row (Explorer style): a normal tree row
  * whose name is an input, rendered as the first child of the target directory.
@@ -123,16 +155,57 @@ function TreeNode({ node, depth, tree, clipboard, actions }: {
     h('div', {
       className: rowClass,
       style: { paddingLeft: 12 + depth * 16 },
-      draggable: true,
+      // Drag-and-drop is a fine-pointer interaction: on touch, a long-press
+      // would otherwise start a drag instead of opening the context menu.
+      draggable: matchPointer('fine'),
       'data-sol-exp-path': node.path,
       'data-sol-exp-isdir': isDir ? '1' : '0',
-      onClick: (e) => actions.select(node.path, e.shiftKey, e.ctrlKey || e.metaKey, isDir),
-      // Files open on double click (single click only selects, as before);
-      // directories keep toggling through the single-click select above.
-      onDoubleClick: isDir ? undefined : () => actions.openFile(node.path),
+      onPointerDown: (e) => {
+        if (!matchPointer('coarse')) return
+        pressFired = false
+        pressX = e.clientX
+        pressY = e.clientY
+        cancelPendingPress()
+        pressTimer = window.setTimeout(() => {
+          pressTimer = null
+          pressFired = true
+          try { navigator.vibrate?.(15) } catch { /* vibration is a courtesy only */ }
+          actions.contextMenu(node.path, pressX, pressY, isDir)
+        }, 480)
+      },
+      onPointerMove: (e) => {
+        // A scroll or drag gesture must never turn into a menu.
+        if (pressTimer !== null && (Math.abs(e.clientX - pressX) > 12 || Math.abs(e.clientY - pressY) > 12)) {
+          cancelPendingPress()
+        }
+      },
+      onPointerUp: () => cancelPendingPress(),
+      onPointerCancel: () => cancelPendingPress(),
+      onPointerLeave: () => cancelPendingPress(),
+      onClick: (e) => {
+        // The click that ends a long-press must not also act on the row.
+        if (pressFired) { pressFired = false; e.preventDefault(); return }
+        // A second click on the same row inside the double-tap window opens
+        // the file — detected here because Android WebViews may never
+        // synthesize dblclick for touch taps. Directories toggle through
+        // select and have no double-click open.
+        const now = Date.now()
+        if (!isDir && lastTapPath === node.path && now - lastTapTime < DOUBLE_TAP_MS) {
+          lastTapPath = null
+          lastTapTime = 0
+          actions.openFile(node.path)
+          return
+        }
+        lastTapPath = node.path
+        lastTapTime = now
+        actions.select(node.path, e.shiftKey, e.ctrlKey || e.metaKey, isDir)
+      },
       onContextMenu: (e) => {
         e.preventDefault()
         e.stopPropagation()
+        // A long-press already opened the menu through the press timer; the
+        // synthetic contextmenu for the same gesture must not open a second.
+        if (pressFired) { pressFired = false; return }
         actions.contextMenu(node.path, e.pageX, e.pageY, isDir)
       },
       onDragStart: () => actions.dragStart(node.path),

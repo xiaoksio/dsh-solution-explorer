@@ -13,11 +13,22 @@ import type { AppState } from "../state/store.ts"
 
 import { loadTree, refreshTreeSilent } from "./tree-render.ts"
 import { commands } from '../commands.ts'
+import { openWithSystemToast, canNativeOpen } from './native-open.ts'
 
 export interface ContextMenuDeps {
   state: AppState
   render: () => void
   loadGitStatus?: (deps?: any) => Promise<void>
+}
+
+/**
+ * Touch-first environment (Android phone/tablet in the DSH app): pointer
+ * events are coarse and there is no working system shell behind open-native.
+ * The menu drops the dead Windows-only entries and "open" runs the
+ * B→D2→D1 fallback chain instead.
+ */
+function isTouchEnv(): boolean {
+  try { return window.matchMedia('(pointer: coarse)').matches } catch { return false }
 }
 
 export function registerContextMenuCommands(deps: ContextMenuDeps): () => void {
@@ -66,6 +77,16 @@ export function registerContextMenuCommands(deps: ContextMenuDeps): () => void {
     }
   };
   commands.openNative = openNative;
+
+  // B→D2→D1 fallback chain for "open with system", for the context menu,
+  // the touch quick menu and the editor's unsupported-file page.
+  commands.openWithSystem = (path: string, root?: string) => {
+    const useRoot = typeof root === 'string' && root ? root : state.root;
+    if (!useRoot || !path) return;
+    void openWithSystemToast(useRoot, path);
+  };
+  // Whether the environment has a real native bridge (menu labeling/tests).
+  commands.canNativeOpen = canNativeOpen;
 
   const hideContextMenu = () => {
     if (state.contextMenu) {
@@ -158,20 +179,30 @@ export function registerContextMenuCommands(deps: ContextMenuDeps): () => void {
 
     const targets = target && state.tree.selectedPaths.has(target) ? [...state.tree.selectedPaths] : target ? [target] : [];
     const base = isDir ? target : target ? target.includes("/") ? target.slice(0, target.lastIndexOf("/")) : target.includes("\\") ? target.slice(0, target.lastIndexOf("\\")) : "" : "";
+    const touch = isTouchEnv();
 
     addItem("新建文件", false, () => commands.new("file", base));
     addItem("新建文件夹", false, () => commands.new("dir", base));
     // Reveal acts on the right-clicked path itself — a file or a folder (single-object
     // semantic), even when a multi-selection containing it is active.
-    if (target) addItem(t("context.reveal"), false, () => commands.openNative(target, "reveal"));
+    // Touch environments have no file-manager app behind xdg-open: drop it there.
+    if (target && !touch) addItem(t("context.reveal"), false, () => commands.openNative(target, "reveal"));
 
     if (targets.length) {
       if (targets.length === 1) {
         addItem("重命名", false, () => commands.rename(targets[0]));
         if (!isDir) {
-          addItem(t("context.open"), false, () => commands.openNative(targets[0], "open"));
-          addItem(t("context.openWith"), false, () => commands.openNative(targets[0], "openas"));
-          addItem(t("context.properties"), false, () => commands.openNative(targets[0], "properties"));
+          if (touch) {
+            // Touch-first ordering: the editor (A route) leads, "open" runs
+            // the B→D2→D1 system-open chain. openWith/properties/reveal are dead
+            // ends on Android, so they are not offered.
+            addItem(t("context.openInEditor"), false, () => commands.openFile?.(targets[0]));
+            addItem(t("context.openSystem"), false, () => commands.openWithSystem?.(targets[0]));
+          } else {
+            addItem(t("context.open"), false, () => commands.openNative(targets[0], "open"));
+            addItem(t("context.openWith"), false, () => commands.openNative(targets[0], "openas"));
+            addItem(t("context.properties"), false, () => commands.openNative(targets[0], "properties"));
+          }
         }
       }
       addItem("复制", false, () => {
@@ -281,6 +312,8 @@ export function registerContextMenuCommands(deps: ContextMenuDeps): () => void {
     delete commands.createCommit;
     delete commands.createCancel;
     delete commands.openNative;
+    delete commands.openWithSystem;
+    delete commands.canNativeOpen;
     delete commands.panelContextMenu;
     delete commands.contextMenu;
     delete commands.rename;

@@ -20,6 +20,8 @@ import { getDocument, PDFWorker, type PDFDocumentProxy } from "pdfjs-dist";
 
 import { PDF_ASSETS, PDF_WORKER_SOURCE } from "../generated/pdfjs-assets.ts";
 
+import { POLYFILL_SOURCE } from "../shims/legacy-polyfills.ts";
+
 import { t } from "../locales.ts";
 
 /** The worker reports readiness before PDF.js is handed its port. */
@@ -61,12 +63,19 @@ interface Session {
 }
 
 /**
+ * Worker-side polyfills: a Blob worker never sees the client bundle, so the
+ * shared legacy-polyfill source is prepended to the inlined worker code.
+ */
+const WORKER_POLYFILL = POLYFILL_SOURCE;
+
+/**
  * Open a PDF in a worker this component owns.
  * @param data - the complete bytes of the file.
  * @returns the open document and its disposer.
  */
 async function openDocument(data: Uint8Array): Promise<Session> {
   const url = URL.createObjectURL(new Blob([
+    WORKER_POLYFILL,
     PDF_WORKER_SOURCE,
     "\nself.postMessage({type:" + JSON.stringify(WORKER_READY) + "});\n",
   ], { type: "text/javascript" }));
@@ -193,8 +202,10 @@ export function PdfPreview({ root, path, zoom, onZoom }: {
         const context = canvas.getContext("2d");
         if (context === null) continue;
         await page.render({ canvas, canvasContext: context, viewport: viewportAt }).promise;
-      } catch {
-        // One unrenderable page must not blank the rest; its placeholder stays empty.
+      } catch (err) {
+        // One unrenderable page must not blank the rest; its placeholder stays
+        // empty. The reason still reaches the webview console relay for triage.
+        console.error("[sol-exp] pdf page render failed:", err);
         painted.current.delete(key);
       }
     }

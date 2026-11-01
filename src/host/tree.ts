@@ -31,6 +31,53 @@ export function imageMime(ext: string): string {
 }
 
 /**
+ * Extension → MIME map for downloads / raw serving. Images are covered by
+ * IMAGE_EXT/imageMime; this covers the rest of the common cases so the
+ * Android WebView download handler and system openers get a usable type.
+ * Unknown extensions fall back to application/octet-stream.
+ */
+const FILE_MIME: Record<string, string> = {
+  pdf: 'application/pdf',
+  zip: 'application/zip',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls: 'application/vnd.ms-excel',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  ppt: 'application/vnd.ms-powerpoint',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  gz: 'application/gzip',
+  tgz: 'application/gzip',
+  tar: 'application/x-tar',
+  '7z': 'application/x-7z-compressed',
+  rar: 'application/vnd.rar',
+  apk: 'application/vnd.android.package-archive',
+  json: 'application/json',
+  xml: 'application/xml',
+  html: 'text/html',
+  htm: 'text/html',
+  css: 'text/css',
+  js: 'text/javascript',
+  mjs: 'text/javascript',
+  cjs: 'text/javascript',
+  txt: 'text/plain',
+  log: 'text/plain',
+  md: 'text/markdown',
+  csv: 'text/csv',
+  mp3: 'audio/mpeg',
+  wav: 'audio/wav',
+  ogg: 'audio/ogg',
+  mp4: 'video/mp4',
+  webm: 'video/webm',
+  woff: 'font/woff',
+  woff2: 'font/woff2',
+}
+
+/** Best-effort MIME for a lowercase extension; octet-stream when unknown. */
+export function fileMime(ext: string): string {
+  return FILE_MIME[ext] || 'application/octet-stream'
+}
+
+/**
  * Entries the tree hides unless the "show hidden files" setting is on:
  * dot-prefixed names (including `.git`) and `node_modules`. No other name is
  * special-cased.

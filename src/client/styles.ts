@@ -30,6 +30,15 @@ export const STYLES = `
 .sol-exp-tree { padding:2px 0; }
 
 .sol-exp-tree-node { display:flex; align-items:center; gap:6px; min-width:0; padding:5px 10px; box-sizing:border-box; cursor:pointer; white-space:nowrap; border-radius:10px; color:var(--dsw-alias-label-primary); }
+/* Touch devices: kill the double-tap-zoom delay on tree rows so the tap /
+   double-tap semantics feel instant. */
+.sol-exp-tree-node { touch-action: manipulation; }
+/* Coarse pointers get 44px touch targets — desktop density is untouched. */
+@media (pointer: coarse) {
+  .sol-exp-tree-node { min-height:44px; padding-top:9px; padding-bottom:9px; }
+  .sol-exp-toolbar-btn { min-width:36px; min-height:36px; }
+  .sol-exp-context-menu-item { min-height:44px; }
+}
 
 .sol-exp-tree-node:hover { background:var(--dsw-alias-interactive-bg-hover); }
 
@@ -323,6 +332,11 @@ export const STYLES = `
 
 .sol-exp-pdfpage canvas { background:#fff; box-shadow:0 1px 5px rgba(0,0,0,.35); }
 
+/* Office/CSV preview (omni-doc-viewer): the viewer finds its scrollport by
+   walking up from its root for an ancestor with overflowY auto/scroll — it
+   builds no scroller of its own — so this container is the scrollport. */
+.sol-exp-docview { flex:1; min-height:0; width:100%; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
+
 .sol-exp-einfo-status.saving { color:var(--dsw-alias-label-secondary); }
 
 .sol-exp-einfo-status.dirty { color:#e2b714; }
@@ -457,4 +471,12 @@ export const STYLES = `
 .sol-set-sw input:checked + .sol-set-sw-track { background: var(--dsw-alias-button-info-fill); }
 .sol-set-sw-thumb { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: left .18s; }
 .sol-set-sw input:checked + .sol-set-sw-track .sol-set-sw-thumb { left: 18px; }
+
+/* Portrait phone: the shell hides the official "open right sidebar" header
+   button whenever the persisted sidebarRight store claims the column is
+   expanded — which it does across restarts while the mobile grid keeps the
+   column track at 0 and nothing renders. That hides the only entry to the
+   native column on the main window, so force it back. Clicks are taken over
+   by the native-rightbar bridge (store realign + exclusivity). */
+html[data-dshm-mode="mobile"] [data-conversation-header-corner] [data-sidebar-right-expand] { display: flex !important; }
 `

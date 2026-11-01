@@ -3,7 +3,7 @@ import * as pathModule from 'node:path'
 import { spawn } from 'node:child_process'
 
 import { json, ensureInside, autoRename, movePath, resolveReadTarget } from '../http-util.ts'
-import { buildFileTree, searchFiles, IMAGE_EXT, imageMime } from '../tree.ts'
+import { buildFileTree, searchFiles, IMAGE_EXT, imageMime, fileMime } from '../tree.ts'
 import { getGitStatus, annotateGitStatus } from '../status.ts'
 import { normPath } from '../paths.ts'
 import { Config } from '../config.ts'
@@ -62,8 +62,11 @@ export const fsGet: Record<string, Handler> = {
       // preview (served raw via /solution-explorer/raw) instead of
       // rejecting them as binary text.
       const imageExt = pathModule.extname(fullPath).slice(1).toLowerCase()
+      // `absolutePath` lets the client hand the real path to a native bridge
+      // (e.g. Android ACTION_VIEW). Same-root guarantee applies: it is the
+      // resolved read target, never a path outside the workspace root.
       if (IMAGE_EXT.has(imageExt)) {
-        json(res, { ok: true, value: { content: '', mtime: stat.mtimeMs, size: stat.size, supported: true, image: true, mime: imageMime(imageExt) } })
+        json(res, { ok: true, value: { content: '', mtime: stat.mtimeMs, size: stat.size, supported: true, image: true, mime: imageMime(imageExt), absolutePath: fullPath } })
         return
       }
       // Binary detection: a NUL byte in the head chunk marks a file the
@@ -78,17 +81,20 @@ export const fsGet: Record<string, Handler> = {
         await fh.close()
       }
       if (!supported) {
-        json(res, { ok: true, value: { content: '', mtime: stat.mtimeMs, size: stat.size, supported: false } })
+        json(res, { ok: true, value: { content: '', mtime: stat.mtimeMs, size: stat.size, supported: false, absolutePath: fullPath } })
         return
       }
       const content = await fsp.readFile(fullPath, 'utf-8')
-      json(res, { ok: true, value: { content, mtime: stat.mtimeMs, size: stat.size, supported: true } })
+      json(res, { ok: true, value: { content, mtime: stat.mtimeMs, size: stat.size, supported: true, absolutePath: fullPath } })
     } catch (err) {
       json(res, { ok: false, error: { message: err instanceof Error ? err.message : String(err) } })
     }
   },
   '/solution-explorer/raw': async ({ res, query }) => {
-    // Serve a file's raw bytes (images for the editor preview).
+    // Serve a file's raw bytes (images for the editor preview). With
+    // `download=1` the response carries Content-Disposition: attachment so a
+    // WebView hands it to the platform downloader (the Android D1 fallback
+    // for "open with system"), instead of navigating to it.
     const root = query.root || ''
     const file = query.file || ''
     if (!root || !file) { json(res, { ok: false, error: { message: 'root and file required' } }); return }
@@ -97,7 +103,14 @@ export const fsGet: Record<string, Handler> = {
       if (fullPath === null) { json(res, { ok: false, error: { message: 'path traversal denied' } }); return }
       const ext = pathModule.extname(fullPath).slice(1).toLowerCase()
       const buf = await fsp.readFile(fullPath)
-      res.writeHead(200, { 'content-type': IMAGE_EXT.has(ext) ? imageMime(ext) : 'application/octet-stream', 'Cache-Control': 'no-store' })
+      const mime = IMAGE_EXT.has(ext) ? imageMime(ext) : fileMime(ext)
+      const headers: Record<string, string> = { 'content-type': mime, 'Cache-Control': 'no-store' }
+      if (query.download === '1') {
+        // RFC 5987: filename* handles non-ASCII names; filename is the ASCII fallback.
+        const name = pathModule.basename(fullPath)
+        headers['Content-Disposition'] = `attachment; filename="download${ext ? '.' + ext : ''}"; filename*=UTF-8''${encodeURIComponent(name)}`
+      }
+      res.writeHead(200, headers)
       res.end(buf)
     } catch (err) {
       json(res, { ok: false, error: { message: err instanceof Error ? err.message : String(err) } })
@@ -345,6 +358,14 @@ export const fsPost: Record<string, Handler> = {
     const action = typeof payload.action === 'string' ? payload.action : ''
     if (!root || !target) { json(res, { ok: false, error: { message: 'root and path required' } }); return }
     if (!OPEN_NATIVE_ACTIONS.has(action)) { json(res, { ok: false, error: { message: 'unknown action' } }); return }
+    // Android has no shell launcher: xdg-open here is the engine's Termux
+    // script copy which silently does nothing without Termux installed (it
+    // still exits 0, so the host previously reported ok:true while nothing
+    // happened). Fail loudly so the client can take its B→D2→D1 fallback chain
+    // (native bridge → download → share) instead of showing "opened".
+    if (process.platform === 'android') {
+      json(res, { ok: false, code: 'android-no-shell', error: { message: 'system open is not available on Android; use the native bridge or download instead' } }); return
+    }
     // "Open with..." and "Properties" are Windows shell features; the other
     // actions degrade gracefully per platform below.
     if ((action === 'openas' || action === 'properties') && process.platform !== 'win32') {
