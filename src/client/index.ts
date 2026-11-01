@@ -10,6 +10,10 @@
 
 
 
+// Legacy WebView polyfills must run before any dependency's module body:
+// this is the entry's first import on purpose.
+import './shims/legacy-polyfills.ts'
+
 import type { ClientContext, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
 
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
@@ -80,11 +84,6 @@ declare module '@deepseek-ai/dsh-client-ui-conversation/client' {
 		];
 
 		function apply(ctx: ClientContext) {
-
-			// TEMP DEBUG (android-tablet): surface runtime failures through the
-			// app's webview console relay.
-			window.addEventListener("error", (e) => console.error("[sol-exp-dbg] window error:", e.message, e.filename, e.lineno));
-			window.addEventListener("unhandledrejection", (e) => console.error("[sol-exp-dbg] rejection:", String((e as PromiseRejectionEvent).reason)));
 
 			ctx.effect(() => ctx.locale.register(NS, dictionaries), "dsh-solution-explorer: dictionaries");
 

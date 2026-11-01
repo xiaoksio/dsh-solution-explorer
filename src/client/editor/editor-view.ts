@@ -18,6 +18,7 @@ import { EditorInfoBar } from "./EditorInfoBar.ts"
 import { MarkdownPreview } from "./MarkdownPreview.ts"
 import { HtmlPreview } from "./HtmlPreview.ts"
 import { PdfPreview } from "./PdfPreview.ts"
+import { DocPreview } from "./DocPreview.ts"
 import { commands } from '../commands.ts'
 
 /**
@@ -841,16 +842,18 @@ const getState = commands.getEditorState;
 			// keeps content clear of the composer, so a renderer is returned as
 			// that box's own child: wrapping it again would inset it twice.
 			if (st.editorRenderer !== null && st.editorPreview === true && error === null
-				&& (st.editorRenderer === "pdf" || st.editorContent !== null)) {
+				&& (st.editorRenderer === "pdf" || st.editorRenderer === "office" || st.editorRenderer === "csv" || st.editorContent !== null)) {
 
 				return st.editorRenderer === "html"
 					? h(HtmlPreview, { root: editorRoot, path: file ?? "", text: st.editorContent ?? "" })
 					: st.editorRenderer === "pdf"
 						? h(PdfPreview, { root: editorRoot, path: file ?? "", zoom, onZoom: setZoom })
-						: h(MarkdownPreview, {
-							text: st.editorContent ?? "",
-							revision: document.documentElement.lang || "zh"
-						});
+						: st.editorRenderer === "office" || st.editorRenderer === "csv"
+							? h(DocPreview, { root: editorRoot, path: file ?? "" })
+							: h(MarkdownPreview, {
+								text: st.editorContent ?? "",
+								revision: document.documentElement.lang || "zh"
+							});
 
 			}
 

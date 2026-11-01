@@ -127,6 +127,7 @@
     "git"
   ],
   "dependencies": {
-    "highlight.js": "^11.12.0"
+    "highlight.js": "^11.12.0",
+    "omni-doc-viewer": "^0.2.0"
   }
 }

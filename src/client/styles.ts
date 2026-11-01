@@ -332,6 +332,11 @@ export const STYLES = `
 
 .sol-exp-pdfpage canvas { background:#fff; box-shadow:0 1px 5px rgba(0,0,0,.35); }
 
+/* Office/CSV preview (omni-doc-viewer): the viewer finds its scrollport by
+   walking up from its root for an ancestor with overflowY auto/scroll — it
+   builds no scroller of its own — so this container is the scrollport. */
+.sol-exp-docview { flex:1; min-height:0; width:100%; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
+
 .sol-exp-einfo-status.saving { color:var(--dsw-alias-label-secondary); }
 
 .sol-exp-einfo-status.dirty { color:#e2b714; }

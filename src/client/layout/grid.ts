@@ -132,10 +132,7 @@ export function mountColumn({ state, render, applySettings }: GridDeps): void {
 
 					const frame = findFrame();
 
-					// TEMP DEBUG (android-tablet)
-					console.log("[sol-exp-dbg] mountColumn frame=", frame === null ? "NULL" : "ok", "already=", state.layout.panelFrame !== null);
-
-					if (frame === null) return;
+				if (frame === null) return;
 
 					state.layout.panelFrame = frame;
 

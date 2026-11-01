@@ -39,6 +39,12 @@ export function imageMime(ext: string): string {
 const FILE_MIME: Record<string, string> = {
   pdf: 'application/pdf',
   zip: 'application/zip',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls: 'application/vnd.ms-excel',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  ppt: 'application/vnd.ms-powerpoint',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   gz: 'application/gzip',
   tgz: 'application/gzip',
   tar: 'application/x-tar',

@@ -503,9 +503,6 @@ export function mountPanel(ctx: ClientContext): void {
 				 */
 				function switchRoot(newRoot: string, keepWidth = false): void {
 
-					// TEMP DEBUG (android-tablet)
-					console.log("[sol-exp-dbg] switchRoot root=", JSON.stringify(newRoot), "settingsLoaded=", state.layout.settingsLoaded, "autoOpen=", state.layout.panelAutoOpen, "frame=", state.layout.panelFrame !== null);
-
 					if (!keepWidth) {
 
 					if (newRoot !== "") {

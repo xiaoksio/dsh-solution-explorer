@@ -10,9 +10,11 @@
 // sync with the host's IMAGE_EXT set).
 const IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "ico", "avif"])
 
-// Extensions that have a rendered preview and nothing to edit or diff: a PDF is
-// bytes, so a text diff of it is meaningless and a source view is not offered.
-const PREVIEW_ONLY_EXTS = new Set([...IMAGE_EXTS, "pdf"])
+// Extensions that have a rendered preview and nothing to edit or diff: a PDF
+// is bytes, and OOXML office documents (docx/xlsx/xls/pptx) are zip archives,
+// so a text diff of them is meaningless and a source view is not offered.
+// CSV joins them: it renders as a table exactly like a workbook sheet.
+const PREVIEW_ONLY_EXTS = new Set([...IMAGE_EXTS, "pdf", "docx", "xlsx", "xls", "pptx", "csv"])
 
 export function isImageFile(name: string): boolean {
   const ext = (name.includes(".") ? name.split(".").pop() : name).toLowerCase()

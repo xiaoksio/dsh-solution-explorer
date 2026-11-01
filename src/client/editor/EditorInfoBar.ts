@@ -22,7 +22,7 @@ export interface EditorZoomControls {
 }
 
 /** What the active tab holds; drives the right-hand label. */
-export type EditorKind = 'image' | 'code' | 'text' | 'diff' | 'markdown' | 'html' | 'pdf'
+export type EditorKind = 'image' | 'code' | 'text' | 'diff' | 'markdown' | 'html' | 'pdf' | 'office' | 'csv'
 
 /** Kind → locale key (spelled out so `t` keeps its key checking). */
 const KIND_KEY: Record<EditorKind, SolutionExplorerKey> = {
@@ -33,6 +33,8 @@ const KIND_KEY: Record<EditorKind, SolutionExplorerKey> = {
   markdown: 'editor.kind.markdown',
   html: 'editor.kind.html',
   pdf: 'editor.kind.pdf',
+  office: 'editor.kind.office',
+  csv: 'editor.kind.csv',
 }
 
 export interface EditorInfoBarProps {

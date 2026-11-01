@@ -44,11 +44,14 @@ export interface EditorTab {
 }
 
 /** How a file is rendered in preview mode, or null when it has no renderer. */
-export type PreviewKind = 'markdown' | 'html' | 'pdf'
+export type PreviewKind = 'markdown' | 'html' | 'pdf' | 'office' | 'csv'
 
 /**
  * Whether a renderer leaves anything to edit as source. A PDF is bytes: it has
  * a rendered form and nothing else, so its info row draws no source toggle.
+ * Office documents are bytes too (their OOXML zip yields no editable text
+ * here), and a CSV renders as a table exactly like a workbook sheet — both
+ * are preview-only.
  * @param kind - the renderer in force.
  * @returns true when the source editor is a meaningful alternative.
  */
@@ -66,6 +69,8 @@ export function previewKindOf(path: string): PreviewKind | null {
   if (/\.(?:md|markdown)$/i.test(normalized)) return 'markdown'
   if (/\.(?:html?)$/i.test(normalized)) return 'html'
   if (/\.pdf$/i.test(normalized)) return 'pdf'
+  if (/\.(?:docx|xlsx|xls|pptx)$/i.test(normalized)) return 'office'
+  if (/\.csv$/i.test(normalized)) return 'csv'
   return null
 }
 
