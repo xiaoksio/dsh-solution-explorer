@@ -6,6 +6,7 @@
 import type { AppState } from "../state/store.ts"
 import { commands } from '../commands.ts'
 import { resolveShellGrid } from "./grid-find.ts"
+import { bindPanelSwipe } from "../touch/gestures.ts"
 
 /** Panel width bounds and collapsed rail width (mirrors panel.ts constants). */
 const PANEL_MIN = 264;
@@ -131,6 +132,9 @@ export function mountColumn({ state, render, applySettings }: GridDeps): void {
 
 					const frame = findFrame();
 
+					// TEMP DEBUG (android-tablet)
+					console.log("[sol-exp-dbg] mountColumn frame=", frame === null ? "NULL" : "ok", "already=", state.layout.panelFrame !== null);
+
 					if (frame === null) return;
 
 					state.layout.panelFrame = frame;
@@ -179,6 +183,20 @@ export function mountColumn({ state, render, applySettings }: GridDeps): void {
 					state.layout.panelCol.addEventListener("dragover", (e) => e.stopPropagation());
 
 					state.layout.panelCol.addEventListener("drop", (e) => e.stopPropagation());
+
+					// Touch gestures on the column: right-swipe folds to the rail,
+					// left-swipe on the rail unfolds. Observe-only (passive); the
+					// mobile layout plugin (dsh-mobile-layout, portrait drawer)
+					// takes precedence when it owns the screen.
+					bindPanelSwipe(state.layout.panelCol, {
+						enabled: () => {
+							const mode = document.documentElement.dataset.dshmMode ?? document.body?.dataset.dshmMode ?? "";
+							return mode !== "mobile";
+						},
+						collapsed: () => state.layout.panelCollapsed,
+						onCollapse: () => { if (!state.layout.panelCollapsed && state.layout.panelWidth > 0) commands.togglePanel?.() },
+						onExpand: () => { if (state.layout.panelCollapsed) commands.railOpen?.(state.currentTab) },
+					});
 
 					state.layout.resizeHandle = document.createElement("div");
 

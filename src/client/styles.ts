@@ -30,6 +30,15 @@ export const STYLES = `
 .sol-exp-tree { padding:2px 0; }
 
 .sol-exp-tree-node { display:flex; align-items:center; gap:6px; min-width:0; padding:5px 10px; box-sizing:border-box; cursor:pointer; white-space:nowrap; border-radius:10px; color:var(--dsw-alias-label-primary); }
+/* Touch devices: kill the double-tap-zoom delay on tree rows so the tap /
+   double-tap semantics feel instant. */
+.sol-exp-tree-node { touch-action: manipulation; }
+/* Coarse pointers get 44px touch targets — desktop density is untouched. */
+@media (pointer: coarse) {
+  .sol-exp-tree-node { min-height:44px; padding-top:9px; padding-bottom:9px; }
+  .sol-exp-toolbar-btn { min-width:36px; min-height:36px; }
+  .sol-exp-context-menu-item { min-height:44px; }
+}
 
 .sol-exp-tree-node:hover { background:var(--dsw-alias-interactive-bg-hover); }
 

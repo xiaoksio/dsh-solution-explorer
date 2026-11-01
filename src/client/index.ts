@@ -81,6 +81,11 @@ declare module '@deepseek-ai/dsh-client-ui-conversation/client' {
 
 		function apply(ctx: ClientContext) {
 
+			// TEMP DEBUG (android-tablet): surface runtime failures through the
+			// app's webview console relay.
+			window.addEventListener("error", (e) => console.error("[sol-exp-dbg] window error:", e.message, e.filename, e.lineno));
+			window.addEventListener("unhandledrejection", (e) => console.error("[sol-exp-dbg] rejection:", String((e as PromiseRejectionEvent).reason)));
+
 			ctx.effect(() => ctx.locale.register(NS, dictionaries), "dsh-solution-explorer: dictionaries");
 
 			ctx.effect(() => {

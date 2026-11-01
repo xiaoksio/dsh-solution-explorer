@@ -897,7 +897,18 @@ const getState = commands.getEditorState;
 
 				color: "var(--dsw-alias-label-tertiary)"
 
-			} }, document.documentElement.lang?.startsWith("zh") ? "不支持打开此文件" : "This file type is not supported");
+			} },
+				h("div", null, document.documentElement.lang?.startsWith("zh") ? "不支持打开此文件" : "This file type is not supported"),
+				// Escape hatch for binary files: hand the path to the system
+				// (Android: C→D fallback chain; desktop: default association).
+				file
+					? h("button", {
+						className: "sol-exp-modal-btn primary",
+						style: { marginTop: "12px" },
+						onClick: () => { commands.openWithSystem?.(file, editorRoot || undefined) },
+					}, t("editor.openWithSystem"))
+					: null,
+			);
 
 			if (error) return h("div", { style: {
 

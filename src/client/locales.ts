@@ -81,6 +81,13 @@ const zh = {
   'context.openWith': '打开方式',
   'context.properties': '属性',
   'context.openFailed': '打开失败',
+  'context.openInEditor': '在编辑器中打开',
+  'context.openSystem': '用系统程序打开',
+  'context.openedWithSystem': '已交给系统程序打开',
+  'context.downloadStarted': '已开始下载，可在通知栏打开',
+  'context.shareStarted': '已发起分享',
+  'context.openFailedNoBridge': '当前环境无法调用系统应用，可尝试在编辑器中打开',
+  'editor.openWithSystem': '用系统程序打开',
 
   // Terminal
   'terminal.new': '新建终端',
@@ -295,6 +302,13 @@ const en: Record<SolutionExplorerKey, string> = {
   'context.openWith': 'Open with...',
   'context.properties': 'Properties',
   'context.openFailed': 'Failed to open',
+  'context.openInEditor': 'Open in editor',
+  'context.openSystem': 'Open with system',
+  'context.openedWithSystem': 'Handed to the system app',
+  'context.downloadStarted': 'Download started — open it from the notification shade',
+  'context.shareStarted': 'Share initiated',
+  'context.openFailedNoBridge': "This environment can't open system apps — try the editor instead",
+  'editor.openWithSystem': 'Open with system app',
 
   // Terminal
   'terminal.new': 'New terminal',

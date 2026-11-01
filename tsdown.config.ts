@@ -43,7 +43,9 @@ export default defineConfig([
     outDir: 'lib',
     format: 'cjs',
     platform: 'browser',
-    target: 'es2024',
+    // es2022: the Android app WebView can be as old as Chromium 110 — the
+    // `Iterator` global (Chrome 122) and later syntax must not leak through.
+    target: 'es2022',
     fixedExtension: false,
     dts: false,
     clean: false,
@@ -63,7 +65,16 @@ export default defineConfig([
     },
     outputOptions: {
       entryFileNames: 'client.js',
-      banner: `window.__ModuleLoader__.load({ id: ${JSON.stringify(PKG_ID)}, factory: (require) => {`,
+      // Pre-banner shims for WebViews older than the APIs a bundled dependency
+      // touches at import time (pdf.js ≥6): the ES2025 `Iterator` global
+      // (Chrome 122) and `Promise.withResolvers` (Chrome 119). The Iterator
+      // shim must be constructor-like — the dependency reads
+      // `Iterator.prototype.join` — so it gets `.prototype` from the real
+      // %IteratorPrototype% chain (the same object user iterators inherit).
+      banner:
+        'if (typeof globalThis.Iterator === "undefined") { try { var __iterProto = Object.getPrototypeOf(Object.getPrototypeOf([][Symbol.iterator]())); var __IteratorCtor = function Iterator() { throw new TypeError("Iterator is not callable"); }; __IteratorCtor.prototype = __iterProto; globalThis.Iterator = __IteratorCtor; } catch (e) {} }\n'
+        + 'if (typeof Promise.withResolvers !== "function") { Promise.withResolvers = function () { var resolve, reject; var promise = new Promise(function (res, rej) { resolve = res; reject = rej; }); return { promise: promise, resolve: resolve, reject: reject }; }; }\n'
+        + `window.__ModuleLoader__.load({ id: ${JSON.stringify(PKG_ID)}, factory: (require) => {`,
       footer: 'return module.exports; } });',
       intro: 'var module = { exports: {} }; var exports = module.exports;',
     },

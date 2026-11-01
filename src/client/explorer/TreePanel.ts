@@ -59,6 +59,25 @@ export interface TreePanelProps {
   actions: TreeActions
 }
 
+// ── Touch semantics ────────────────────────────────────────────────────────
+// On a coarse pointer (Android tablet/phone): a single tap selects the file
+// AND schedules a quick menu 250ms later; a second tap (double tap) cancels
+// the pending menu and opens the file. Long-press keeps the full context
+// menu through the native oncontextmenu event. Fine pointers keep the
+// desktop behavior untouched.
+let tapMenuTimer: number | null = null
+
+function cancelPendingTapMenu(): void {
+  if (tapMenuTimer !== null) {
+    window.clearTimeout(tapMenuTimer)
+    tapMenuTimer = null
+  }
+}
+
+function matchPointer(kind: 'coarse' | 'fine'): boolean {
+  try { return window.matchMedia(`(pointer: ${kind})`).matches } catch { return kind === 'fine' }
+}
+
 /**
  * The inline "new file / new folder" row (Explorer style): a normal tree row
  * whose name is an input, rendered as the first child of the target directory.
@@ -123,13 +142,33 @@ function TreeNode({ node, depth, tree, clipboard, actions }: {
     h('div', {
       className: rowClass,
       style: { paddingLeft: 12 + depth * 16 },
-      draggable: true,
+      // Drag-and-drop is a fine-pointer interaction: on touch, a long-press
+      // would otherwise start a drag instead of opening the context menu.
+      draggable: matchPointer('fine'),
       'data-sol-exp-path': node.path,
       'data-sol-exp-isdir': isDir ? '1' : '0',
-      onClick: (e) => actions.select(node.path, e.shiftKey, e.ctrlKey || e.metaKey, isDir),
+      onClick: (e) => {
+        if (!isDir && matchPointer('coarse')) {
+          // Tap 1: select now, quick menu after the double-tap window.
+          actions.select(node.path, false, false, false)
+          cancelPendingTapMenu()
+          const x = e.clientX
+          const y = e.clientY
+          tapMenuTimer = window.setTimeout(() => {
+            tapMenuTimer = null
+            actions.contextMenu(node.path, x, y, false)
+          }, 250)
+          return
+        }
+        actions.select(node.path, e.shiftKey, e.ctrlKey || e.metaKey, isDir)
+      },
       // Files open on double click (single click only selects, as before);
       // directories keep toggling through the single-click select above.
-      onDoubleClick: isDir ? undefined : () => actions.openFile(node.path),
+      // A double tap cancels the pending quick menu first.
+      onDoubleClick: isDir ? undefined : () => {
+        cancelPendingTapMenu()
+        actions.openFile(node.path)
+      },
       onContextMenu: (e) => {
         e.preventDefault()
         e.stopPropagation()
